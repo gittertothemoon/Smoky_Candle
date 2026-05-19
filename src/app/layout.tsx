@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://smoky-candle.vercel.app"),
+  metadataBase: new URL("https://smokycandle.com"),
   title: "Smoky Candle — Candele in cera di soia, colate a mano in Italia",
   description:
     "Due fragranze, una cosa fatta bene. Cera di soia 100%, niente ftalati, vetro da riusare. Butter e Berry, colate a mano in Italia.",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
       "Due fragranze. Cera di soia 100%. Colate a mano in Italia.",
     type: "website",
     locale: "it_IT",
-    url: "https://smoky-candle.vercel.app",
+    url: "https://smokycandle.com",
     siteName: "Smoky Candle",
     images: [
       {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     images: ["/images/hero_7.webp"],
   },
   alternates: {
-    canonical: "https://smoky-candle.vercel.app",
+    canonical: "https://smokycandle.com",
   },
   robots: { index: true, follow: true },
   manifest: "/site.webmanifest",
@@ -81,8 +81,8 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               name: "Smoky Candle",
-              url: "https://smoky-candle.vercel.app",
-              logo: "https://smoky-candle.vercel.app/images/logo.webp",
+              url: "https://smokycandle.com",
+              logo: "https://smokycandle.com/images/logo.webp",
               description: "Candele in cera di soia colate a mano in Italia.",
               sameAs: ["https://instagram.com/smokycandle"],
               contactPoint: {
