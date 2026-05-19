@@ -27,14 +27,13 @@ export default function NewsletterSection() {
             <div className="relative mx-auto max-w-3xl px-6 text-center">
                 <RevealOnScroll>
                     <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
-                        Resta Connesso
+                        Resta in contatto
                     </p>
                     <h2 className="mt-3 text-3xl font-bold tracking-tighter text-zinc-50 md:text-5xl">
-                        Non perderti le novita.
+                        Una lettera al mese. Non di più.
                     </h2>
                     <p className="mx-auto mt-4 max-w-[45ch] text-base leading-relaxed text-zinc-400">
-                        Iscriviti alla newsletter per ricevere anteprime esclusive,
-                        offerte riservate e la storia dietro ogni fragranza.
+                        Anteprime delle nuove fragranze, piccoli rituali da provare e qualche pensiero dal laboratorio. Quando ce n'è davvero da raccontare.
                     </p>
                 </RevealOnScroll>
 
@@ -64,10 +63,10 @@ export default function NewsletterSection() {
                                         className="w-full rounded-full border border-zinc-700 bg-zinc-800/50 px-5 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/20"
                                     />
                                 </div>
-                                <MagneticButton variant="primary" size="md">
+                                <MagneticButton variant="primary" size="md" type="submit">
                                     <span className="flex items-center gap-2">
                                         Iscriviti
-                                        <PaperPlaneTilt size={16} weight="bold" />
+                                        <PaperPlaneTilt size={16} weight="bold" aria-hidden="true" />
                                     </span>
                                 </MagneticButton>
                             </motion.form>
@@ -83,14 +82,14 @@ export default function NewsletterSection() {
                                     <Check size={16} weight="bold" className="text-zinc-950" />
                                 </div>
                                 <p className="text-sm font-medium text-emerald-300">
-                                    Iscrizione confermata. Benvenuto nella community!
+                                    Benvenuto. La prima lettera arriva presto.
                                 </p>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
                     <p className="mt-4 text-xs text-zinc-600">
-                        Nessuno spam, promesso. Puoi disiscriverti in qualsiasi momento.
+                        Niente spam, solo cose che vale la pena leggere. Puoi cancellarti in qualsiasi momento.
                     </p>
                 </RevealOnScroll>
             </div>

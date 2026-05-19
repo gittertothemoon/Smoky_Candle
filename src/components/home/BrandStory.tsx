@@ -17,31 +17,25 @@ export default function BrandStory() {
                 <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-20">
                     <RevealOnScroll direction="left">
                         <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
-                            La Nostra Storia
+                            Il nostro laboratorio
                         </p>
                         <h2 className="mt-3 text-3xl font-bold tracking-tighter text-zinc-50 md:text-5xl">
-                            Nata dalla passione,
+                            Una candela alla volta,
                             <br />
-                            <span className="text-zinc-500">fatta a mano in Italia.</span>
+                            <span className="text-zinc-500">una mano alla volta.</span>
                         </h2>
                         <p className="mt-6 max-w-[50ch] text-base leading-relaxed text-zinc-400">
-                            Smoky Candle nasce dalla volonta di creare qualcosa di
-                            autentico. Ogni candela viene versata a mano nel nostro
-                            laboratorio, utilizzando solo cera di soia 100% naturale e
-                            fragranze selezionate con cura. Nessun additivo chimico,
-                            nessun compromesso.
+                            Coliamo ogni candela a mano nel nostro laboratorio, in lotti piccoli. Cera di soia pura, niente paraffina, niente scorciatoie. Quello che mettiamo dentro è quello che senti quando la accendi.
                         </p>
                         <p className="mt-4 max-w-[50ch] text-base leading-relaxed text-zinc-400">
-                            La nostra missione e semplice: portare nelle case italiane una
-                            luce calda e un profumo che racconta una storia. Due
-                            fragranze, due mondi. Un unico standard di qualita.
+                            Due fragranze, non venti. Perché prima di metterle in vendita le abbiamo bruciate per intero, una dopo l'altra. Solo queste due continuavano a sorprenderci fino all'ultima ora.
                         </p>
                     </RevealOnScroll>
 
                     <RevealOnScroll direction="right" delay={0.15}>
                         <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem]">
                             <Image
-                                src="/images/home_1.png"
+                                src="/images/home_1.webp"
                                 alt="Laboratorio artigianale Smoky Candle"
                                 fill
                                 className="object-cover"
@@ -56,7 +50,7 @@ export default function BrandStory() {
                     <RevealOnScroll direction="left" delay={0.1}>
                         <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem]">
                             <Image
-                                src="/images/home_3.png"
+                                src="/images/home_3.webp"
                                 alt="Cera di soia naturale"
                                 fill
                                 className="object-cover"
@@ -69,16 +63,16 @@ export default function BrandStory() {
                         <div className="grid grid-cols-1 gap-8">
                             {[
                                 {
-                                    title: "Cera di Soia Pura",
-                                    desc: "100% vegetale, biodegradabile e a combustion lenta per un esperienza che dura nel tempo.",
+                                    title: "Cera di soia pura",
+                                    desc: "Vegetale, biodegradabile, a combustione lenta. Oltre 40 ore di luce calda, senza fumo nero e con un finale pulito sul vetro.",
                                 },
                                 {
-                                    title: "Fragranze Naturali",
-                                    desc: "Oli essenziali e composti aromatici selezionati a mano, senza ftalati ne parabeni.",
+                                    title: "Fragranze pulite",
+                                    desc: "Solo oli essenziali e composti aromatici certificati IFRA. Niente ftalati, niente parabeni. Lo stoppino è in legno: crepita piano mentre brucia, come un piccolo camino.",
                                 },
                                 {
-                                    title: "Packaging Sostenibile",
-                                    desc: "Contenitori riutilizzabili e materiali riciclati. Perche la qualita non deve costare al pianeta.",
+                                    title: "Un vetro che vive",
+                                    desc: "Quando la candela finisce, il bicchiere comincia una seconda vita. Spazzolini, fiori secchi, piccoli rituali. A te scegliere quale.",
                                 },
                             ].map((item, i) => (
                                 <div key={i} className="border-t border-zinc-800 pt-6">

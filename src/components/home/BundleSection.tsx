@@ -9,32 +9,32 @@ import { products } from "@/components/home/ProductShowcase";
 const bundles = [
     {
         id: "duo-pack",
-        name: "Duo Pack",
+        name: "Duo",
         description:
-            "Entrambe le fragranze in un unico cofanetto regalo. Perfetto per chi non sa scegliere.",
+            "Butter e Berry, una accanto all'altra. La scelta perfetta per chi vuole vivere entrambe le atmosfere.",
         price: 58,
         originalPrice: 68,
-        image: "/images/bundle_1.png",
+        image: "/images/bundle_1.webp",
         products: ["butter", "berry"],
     },
     {
         id: "gift-set",
-        name: "Gift Set Premium",
+        name: "Cofanetto regalo",
         description:
-            "Il cofanetto completo con packaging esclusivo, ideale per un regalo indimenticabile.",
+            "Le due fragranze custodite in una scatola rigida nera. Arriva pronta da consegnare, senza nessun incarto da aggiungere.",
         price: 62,
         originalPrice: 72,
-        image: "/images/bundle_2.png",
+        image: "/images/bundle_2.webp",
         products: ["butter", "berry"],
     },
     {
         id: "discovery-box",
         name: "Discovery Box",
         description:
-            "La collezione completa Smoky Candle con packaging di lusso e card personalizzata.",
+            "Il Duo con un biglietto scritto a mano dalle nostre mani. Per i momenti in cui un regalo deve dire qualcosa di tuo.",
         price: 65,
         originalPrice: 78,
-        image: "/images/bundle_3.png",
+        image: "/images/bundle_3.webp",
         products: ["butter", "berry"],
     },
 ];
@@ -58,14 +58,13 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
             <div className="mx-auto max-w-7xl px-6">
                 <RevealOnScroll>
                     <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
-                        Cofanetti Regalo
+                        Cofanetti
                     </p>
                     <h2 className="mt-3 text-3xl font-bold tracking-tighter text-zinc-50 md:text-5xl">
-                        Regala un&apos;emozione.
+                        Pensati per essere regalati.
                     </h2>
                     <p className="mt-4 max-w-[50ch] text-base leading-relaxed text-zinc-500">
-                        Scopri i nostri cofanetti curati, pensati per chi ama fare regali
-                        speciali. Ogni set include entrambe le fragranze.
+                        Tre modi diversi di portare le nostre fragranze a chi vuoi bene. Ognuno con la sua personalità.
                     </p>
                 </RevealOnScroll>
 
@@ -120,7 +119,7 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
                                                     onClick={() => handleAddBundle(bundle.id)}
                                                     className="w-full justify-center"
                                                 >
-                                                    Aggiungi al Carrello
+                                                    Aggiungi al carrello
                                                 </MagneticButton>
                                             </div>
                                         </div>

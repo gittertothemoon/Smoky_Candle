@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, ShoppingBag } from "@phosphor-icons/react";
 import Image from "next/image";
@@ -31,6 +32,20 @@ export default function CartModal({
         0
     );
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose();
+        };
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        window.addEventListener("keydown", onKey);
+        return () => {
+            document.body.style.overflow = prevOverflow;
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [isOpen, onClose]);
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -46,6 +61,9 @@ export default function CartModal({
 
                     {/* Slide-over panel */}
                     <motion.div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Carrello"
                         className="fixed top-0 right-0 bottom-0 z-50 flex w-full max-w-md flex-col bg-zinc-900 border-l border-zinc-800"
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
@@ -57,7 +75,7 @@ export default function CartModal({
                             <div className="flex items-center gap-3">
                                 <ShoppingBag size={22} weight="light" className="text-zinc-300" />
                                 <h2 className="text-lg font-semibold tracking-tight text-zinc-100">
-                                    Il tuo Carrello
+                                    Carrello
                                 </h2>
                             </div>
                             <button
@@ -79,10 +97,10 @@ export default function CartModal({
                                         className="text-zinc-700"
                                     />
                                     <p className="mt-4 text-sm text-zinc-500">
-                                        Il carrello e vuoto.
+                                        Il tuo carrello è vuoto.
                                     </p>
                                     <p className="mt-1 text-xs text-zinc-600">
-                                        Aggiungi una fragranza per iniziare.
+                                        Scegli una fragranza per iniziare.
                                     </p>
                                 </div>
                             ) : (
@@ -130,25 +148,29 @@ export default function CartModal({
                                                         {/* Quantity controls */}
                                                         <div className="flex items-center gap-2">
                                                             <button
+                                                                type="button"
                                                                 onClick={() =>
                                                                     item.quantity === 1
                                                                         ? onRemove(item.product.id)
                                                                         : onUpdateQuantity(item.product.id, -1)
                                                                 }
-                                                                className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-700 text-zinc-400 transition-colors hover:bg-zinc-800"
+                                                                aria-label={item.quantity === 1 ? `Rimuovi ${item.product.variant}` : `Riduci quantità ${item.product.variant}`}
+                                                                className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-700 text-zinc-400 transition-colors hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                                             >
-                                                                <Minus size={14} />
+                                                                <Minus size={14} aria-hidden="true" />
                                                             </button>
-                                                            <span className="w-6 text-center text-sm font-medium text-zinc-200">
+                                                            <span className="w-6 text-center text-sm font-medium text-zinc-200" aria-live="polite">
                                                                 {item.quantity}
                                                             </span>
                                                             <button
+                                                                type="button"
                                                                 onClick={() =>
                                                                     onUpdateQuantity(item.product.id, 1)
                                                                 }
-                                                                className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-700 text-zinc-400 transition-colors hover:bg-zinc-800"
+                                                                aria-label={`Aumenta quantità ${item.product.variant}`}
+                                                                className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-700 text-zinc-400 transition-colors hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                                             >
-                                                                <Plus size={14} />
+                                                                <Plus size={14} aria-hidden="true" />
                                                             </button>
                                                         </div>
 
@@ -178,10 +200,10 @@ export default function CartModal({
                                     size="lg"
                                     className="w-full justify-center"
                                 >
-                                    Procedi al Checkout
+                                    Procedi al checkout
                                 </MagneticButton>
                                 <p className="mt-3 text-center text-xs text-zinc-600">
-                                    Spedizione gratuita in tutta Italia
+                                    Spedizione gratuita in Italia · Consegna in 2–4 giorni
                                 </p>
                             </div>
                         )}

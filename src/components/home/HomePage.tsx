@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Navbar from "@/components/layout/Navbar";
+import ScrollProgress from "@/components/ui/ScrollProgress";
 import HeroSection from "@/components/home/HeroSection";
 import MarqueeBand from "@/components/home/MarqueeBand";
 import ProductShowcase from "@/components/home/ProductShowcase";
@@ -55,6 +56,7 @@ export default function HomePage() {
 
     return (
         <>
+            <ScrollProgress />
             <Navbar cartCount={cartCount} onCartOpen={() => setCartOpen(true)} />
             <main>
                 <HeroSection />

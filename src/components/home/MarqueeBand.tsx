@@ -4,16 +4,16 @@ import { motion } from "framer-motion";
 import React from "react";
 
 const words = [
-    "Cera di Soia",
+    "Cera di soia pura",
+    "Colate a mano",
     "Made in Italy",
-    "Artigianale",
-    "Fragranze Naturali",
-    "Versata a Mano",
-    "Sostenibile",
     "Butter",
     "Berry",
-    "Premium",
-    "100% Naturale",
+    "Fiamma lenta",
+    "Fragranze pulite",
+    "Vetro che vive",
+    "Due fragranze",
+    "Piccoli lotti",
 ];
 
 function MarqueeRow({ reverse = false }: { reverse?: boolean }) {
@@ -46,7 +46,7 @@ function MarqueeRow({ reverse = false }: { reverse?: boolean }) {
 
 const MarqueeBand = React.memo(function MarqueeBand() {
     return (
-        <section className="relative overflow-hidden border-y border-zinc-200 bg-zinc-50 py-6 dark:border-zinc-800 dark:bg-zinc-900">
+        <section className="relative overflow-hidden border-y border-zinc-200 bg-zinc-50 py-6">
             <MarqueeRow />
             <MarqueeRow reverse />
         </section>

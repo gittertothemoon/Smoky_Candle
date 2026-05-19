@@ -7,28 +7,28 @@ const testimonials = [
     {
         name: "Martina Ferretti",
         location: "Milano",
-        text: "La fragranza Butter e incredibile. Riempie la stanza di un profumo caldo e avvolgente che dura ore. Non tornero mai alle candele industriali.",
+        text: "Butter scalda davvero la stanza. Dopo dieci minuti la cucina sa di vaniglia e legno, ma con leggerezza. La accendo ogni sera, è diventata un rituale.",
         variant: "Butter",
         rating: 5,
     },
     {
         name: "Alessandro Morandi",
         location: "Roma",
-        text: "Ho regalato il Duo Pack alla mia ragazza per il compleanno. Il packaging e curatissimo e la qualita si sente subito. Un regalo perfetto.",
-        variant: "Duo Pack",
+        text: "Ho regalato il Duo per il compleanno della mia ragazza. Il packaging è stato già un regalo a sé. Mi ha scritto la sera stessa per dirmi che la casa profumava.",
+        variant: "Duo",
         rating: 5,
     },
     {
         name: "Giulia De Santis",
         location: "Firenze",
-        text: "Berry e la mia preferita in assoluto. Le note di rosa damascena sono sofisticate e non invadenti. La uso ogni sera per rilassarmi.",
+        text: "Berry vive nella mia camera da letto. La accendo mentre leggo: si sente ma non invade, riempie l'aria senza appesantirla. La dose giusta di profumo.",
         variant: "Berry",
         rating: 5,
     },
     {
         name: "Marco Bianchi",
         location: "Torino",
-        text: "Cercavo candele naturali senza compromessi e le ho trovate. La cera di soia brucia in modo uniforme e il profumo e autentico, non sintetico.",
+        text: "Cercavo una candela che bruciasse pulita, senza quella scia nera sul vetro. L'ho trovata. Cera vera, fiamma stabile, profumo che non stanca dopo due ore.",
         variant: "Butter",
         rating: 5,
     },
@@ -45,10 +45,10 @@ export default function TestimonialsSection() {
             <div className="relative mx-auto max-w-7xl px-6">
                 <RevealOnScroll>
                     <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
-                        Recensioni
+                        Chi le accende
                     </p>
                     <h2 className="mt-3 text-3xl font-bold tracking-tighter text-zinc-50 md:text-5xl">
-                        Chi ci ha scelto, ci sceglie ancora.
+                        Le parole di chi vive le nostre fragranze.
                     </h2>
                 </RevealOnScroll>
 

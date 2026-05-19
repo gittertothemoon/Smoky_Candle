@@ -23,12 +23,12 @@ export default function VideoShowcase() {
             <div className="mx-auto max-w-7xl px-6">
                 <RevealOnScroll>
                     <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
-                        L&apos;Esperienza
+                        La fiamma
                     </p>
                     <h2 className="mt-3 text-3xl font-bold tracking-tighter text-zinc-50 md:text-5xl">
-                        Ogni fiamma racconta
+                        Lenta, calda,
                         <br />
-                        <span className="text-zinc-500">una storia.</span>
+                        <span className="text-zinc-500">senza scorciatoie.</span>
                     </h2>
                 </RevealOnScroll>
             </div>
@@ -37,15 +37,17 @@ export default function VideoShowcase() {
                 className="relative mx-auto mt-12 overflow-hidden"
                 style={{ scale, opacity, borderRadius }}
             >
-                <div className="relative aspect-video w-full">
+                <div className="relative aspect-[4/5] w-full md:aspect-video">
                     <video
                         autoPlay
                         muted
                         loop
                         playsInline
+                        preload="metadata"
                         className="h-full w-full object-cover"
-                        poster="/images/hero_6.png"
+                        poster="/images/hero_6.webp"
                     >
+                        <source src="/images/home_2-mobile.mp4" media="(max-width: 768px)" type="video/mp4" />
                         <source src="/images/home_2.mp4" type="video/mp4" />
                     </video>
                     {/* Gradient edge vignette */}

@@ -29,9 +29,9 @@ export const products: Product[] = [
         variant: "Butter",
         price: 34,
         description:
-            "Una fragranza calda e avvolgente ispirata al burro fuso e alla vaniglia artigianale. Perfetta per serate tranquille e momenti di relax.",
+            "Vaniglia bourbon, burro caldo, una scia di cedro sul fondo. La fragranza che chiama il divano, una coperta e le sere lunghe.",
         notes: ["Vaniglia", "Burro fuso", "Legno di cedro"],
-        image: "/images/butter.png",
+        image: "/images/butter.webp",
         accentColor: "text-amber-300",
     },
     {
@@ -40,9 +40,9 @@ export const products: Product[] = [
         variant: "Berry",
         price: 34,
         description:
-            "Un bouquet fruttato e sofisticato con bacche selvatiche e rosa damascena. Per chi cerca eleganza e vitalita in ogni stanza.",
+            "Frutti di bosco appena raccolti, rosa damascena, muschio bianco. Apre la stanza con leggerezza, lascia respirare l'aria.",
         notes: ["Frutti di bosco", "Rosa damascena", "Muschio bianco"],
-        image: "/images/berry.png",
+        image: "/images/berry.webp",
         accentColor: "text-rose-400",
     },
 ];
@@ -94,7 +94,7 @@ function TiltCard({
             {/* Card */}
             <div className="relative overflow-hidden rounded-[2rem] bg-zinc-900 border border-zinc-800/50">
                 {/* Image */}
-                <div className="relative aspect-[3/4] w-full overflow-hidden">
+                <div className="relative aspect-square w-full overflow-hidden">
                     <Image
                         src={product.image}
                         alt={`${product.name} ${product.variant}`}
@@ -102,11 +102,11 @@ function TiltCard({
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                         sizes="(max-width: 768px) 100vw, 50vw"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-900 to-transparent" />
                 </div>
 
-                {/* Info overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-8">
+                {/* Info panel — separato dall'immagine per leggibilità */}
+                <div className="relative px-8 pt-7 pb-8">
                     <p
                         className={`text-sm font-medium uppercase tracking-[0.2em] ${product.accentColor}`}
                     >
@@ -115,31 +115,36 @@ function TiltCard({
                     <h3 className="mt-2 text-2xl font-bold tracking-tighter text-zinc-50 md:text-3xl">
                         {product.name}
                     </h3>
-                    <p className="mt-3 max-w-[40ch] text-sm leading-relaxed text-zinc-400">
+                    <p className="mt-3 max-w-[40ch] text-sm leading-relaxed text-zinc-300">
                         {product.description}
                     </p>
                     {/* Notes */}
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-5 flex flex-wrap gap-2">
                         {product.notes.map((note) => (
                             <span
                                 key={note}
-                                className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400"
+                                className="rounded-full border border-zinc-700 bg-zinc-900/60 px-3 py-1 text-xs text-zinc-300"
                             >
                                 {note}
                             </span>
                         ))}
                     </div>
                     {/* Price + CTA */}
-                    <div className="mt-6 flex items-center justify-between">
-                        <span className="text-2xl font-bold tracking-tight text-zinc-50">
-                            {product.price}&euro;
-                        </span>
+                    <div className="mt-7 flex items-center justify-between border-t border-zinc-800/70 pt-6">
+                        <div className="flex flex-col">
+                            <span className="text-[0.65rem] uppercase tracking-[0.2em] text-zinc-500">
+                                Prezzo
+                            </span>
+                            <span className="text-2xl font-bold tracking-tight text-zinc-50">
+                                {product.price}&euro;
+                            </span>
+                        </div>
                         <MagneticButton
                             variant="primary"
                             size="md"
                             onClick={() => onAddToCart(product)}
                         >
-                            Aggiungi al Carrello
+                            Aggiungi al carrello
                         </MagneticButton>
                     </div>
                 </div>
@@ -159,14 +164,13 @@ export default function ProductShowcase({ onAddToCart }: ProductShowcaseProps) {
                 {/* Section header */}
                 <RevealOnScroll>
                     <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
-                        Due Fragranze
+                        Le fragranze
                     </p>
                     <h2 className="mt-3 text-3xl font-bold tracking-tighter text-zinc-50 md:text-5xl">
-                        Scegli la tua essenza.
+                        Due atmosfere, una stessa cura.
                     </h2>
                     <p className="mt-4 max-w-[55ch] text-base leading-relaxed text-zinc-500">
-                        Ogni candela e versata a mano con cera di soia 100% naturale.
-                        Due personalita distinte per due atmosfere uniche.
+                        Le componiamo nello stesso laboratorio, con la stessa cera e le stesse mani. A cambiare è solo l'atmosfera che decidi di accendere.
                     </p>
                 </RevealOnScroll>
 

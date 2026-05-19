@@ -10,21 +10,15 @@ export default function Footer() {
                 <div className="grid grid-cols-1 gap-12 md:grid-cols-3 md:gap-8">
                     {/* Brand */}
                     <div>
-                        <div className="flex items-center gap-3">
-                            <Image
-                                src="/images/logo.png"
-                                alt="Smoky Candle"
-                                width={36}
-                                height={36}
-                                className="rounded-full"
-                            />
-                            <span className="text-lg font-semibold tracking-tighter text-zinc-100">
-                                Smoky Candle
-                            </span>
-                        </div>
+                        <Image
+                            src="/images/wordmark.webp"
+                            alt="Smoky Candle"
+                            width={200}
+                            height={200}
+                            className="h-24 w-auto [filter:brightness(0)_invert(1)]"
+                        />
                         <p className="mt-4 max-w-[35ch] text-sm leading-relaxed text-zinc-500">
-                            Candele artigianali in cera di soia, versate a mano in Italia
-                            con fragranze naturali.
+                            Candele in cera di soia, colate a mano nel nostro laboratorio in Italia. Due fragranze pensate per durare.
                         </p>
                     </div>
 
@@ -35,14 +29,14 @@ export default function Footer() {
                         </h4>
                         <ul className="mt-4 space-y-3">
                             {[
-                                { label: "La Nostra Storia", href: "#storia" },
                                 { label: "Fragranze", href: "#fragranze" },
+                                { label: "Laboratorio", href: "#storia" },
                                 { label: "Contatti", href: "#contatti" },
                             ].map((l) => (
                                 <li key={l.href}>
                                     <a
                                         href={l.href}
-                                        className="text-sm text-zinc-500 transition-colors hover:text-zinc-200"
+                                        className="link-underline hover:link-underline-hover text-sm text-zinc-500 transition-colors hover:text-zinc-200"
                                     >
                                         {l.label}
                                     </a>
@@ -82,8 +76,7 @@ export default function Footer() {
                 </div>
 
                 <div className="mt-16 border-t border-zinc-800 pt-8 text-center text-xs text-zinc-600">
-                    &copy; {new Date().getFullYear()} Smoky Candle. Tutti i diritti
-                    riservati. Made with love in Italy.
+                    &copy; {new Date().getFullYear()} Smoky Candle · Colate a mano in Italia
                 </div>
             </div>
         </footer>

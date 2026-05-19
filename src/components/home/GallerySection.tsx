@@ -4,12 +4,12 @@ import Image from "next/image";
 import RevealOnScroll from "@/components/ui/RevealOnScroll";
 
 const galleryImages = [
-    { src: "/images/hero_3.png", alt: "Smoky Candle atmosfera", span: "col-span-2 row-span-2" },
-    { src: "/images/home_5.png", alt: "Candela Butter accesa con packaging", span: "col-span-1 row-span-1" },
-    { src: "/images/pack_2.png", alt: "Packaging premium Smoky Candle", span: "col-span-1 row-span-1" },
-    { src: "/images/hero_4.png", alt: "Dettaglio cera di soia", span: "col-span-1 row-span-2" },
-    { src: "/images/bundle_2.png", alt: "Set regalo invernale", span: "col-span-1 row-span-1" },
-    { src: "/images/hero6landing.png", alt: "Candele Smoky Candle in ambiente", span: "col-span-2 row-span-1" },
+    { src: "/images/hero_3.webp", alt: "Smoky Candle atmosfera", span: "col-span-2 row-span-2" },
+    { src: "/images/home_5.webp", alt: "Candela Butter accesa con packaging", span: "col-span-1 row-span-1" },
+    { src: "/images/pack_2.webp", alt: "Packaging Smoky Candle in scatola nera", span: "col-span-1 row-span-1" },
+    { src: "/images/hero_4.webp", alt: "Dettaglio cera di soia", span: "col-span-1 row-span-2" },
+    { src: "/images/bundle_2.webp", alt: "Set regalo invernale", span: "col-span-1 row-span-1" },
+    { src: "/images/hero6landing.webp", alt: "Candele Smoky Candle in ambiente", span: "col-span-2 row-span-1" },
 ];
 
 export default function GallerySection() {

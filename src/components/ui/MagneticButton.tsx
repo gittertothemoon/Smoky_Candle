@@ -15,6 +15,8 @@ interface MagneticButtonProps {
     onClick?: () => void;
     variant?: "primary" | "outline" | "ghost";
     size?: "sm" | "md" | "lg";
+    type?: "button" | "submit" | "reset";
+    "aria-label"?: string;
 }
 
 export default function MagneticButton({
@@ -23,6 +25,8 @@ export default function MagneticButton({
     onClick,
     variant = "primary",
     size = "md",
+    type = "button",
+    "aria-label": ariaLabel,
 }: MagneticButtonProps) {
     const ref = useRef<HTMLButtonElement>(null);
 
@@ -67,8 +71,11 @@ export default function MagneticButton({
     return (
         <motion.button
             ref={ref}
+            type={type}
+            aria-label={ariaLabel}
             className={cn(
                 "relative cursor-pointer rounded-full font-medium tracking-tight transition-colors duration-200",
+                "outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 focus-visible:ring-accent",
                 "active:scale-[0.98] active:-translate-y-[1px]",
                 variants[variant],
                 sizes[size],

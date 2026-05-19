@@ -21,13 +21,22 @@ export default function HeroSection() {
             ref={containerRef}
             className="relative min-h-[100dvh] overflow-hidden bg-zinc-950"
         >
-            {/* Background Image with Parallax */}
+            {/* Background Image with Parallax — art-directed mobile vs desktop */}
             <motion.div className="absolute inset-0" style={{ y: bgY }}>
                 <Image
-                    src="/images/hero_7.png"
-                    alt="Candela artigianale Smoky Candle"
+                    src="/images/hero-mobile.webp"
+                    alt="Candele Smoky Candle in cera di soia"
                     fill
-                    className="object-cover opacity-60"
+                    className="object-cover opacity-60 md:hidden"
+                    priority
+                    sizes="100vw"
+                />
+                <Image
+                    src="/images/hero-desktop.webp"
+                    alt=""
+                    aria-hidden
+                    fill
+                    className="hidden object-cover opacity-60 md:block"
                     priority
                     sizes="100vw"
                 />
@@ -50,7 +59,7 @@ export default function HeroSection() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2, type: "spring", stiffness: 100, damping: 20 }}
                         >
-                            Artigianale / Made in Italy
+                            Cera di soia · Versate a mano in Italia
                         </motion.p>
 
                         {/* Main Heading */}
@@ -60,9 +69,9 @@ export default function HeroSection() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4, type: "spring", stiffness: 100, damping: 20 }}
                         >
-                            Luce soffice,
+                            Accendi,
                             <br />
-                            <span className="text-zinc-400">fragranza autentica.</span>
+                            <span className="text-zinc-400">la stanza respira.</span>
                         </motion.h1>
 
                         {/* Description */}
@@ -72,8 +81,7 @@ export default function HeroSection() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.6, type: "spring", stiffness: 100, damping: 20 }}
                         >
-                            Ogni candela Smoky Candle nasce da cera di soia pura, versata a
-                            mano in Italia. Due fragranze uniche per trasformare ogni ambiente.
+                            Due fragranze pensate per accompagnare un'ora intera. Cera di soia colata a mano, fiamma lenta, profumo che si svela mentre l'ambiente si scalda.
                         </motion.p>
 
                         {/* CTA */}
@@ -84,10 +92,10 @@ export default function HeroSection() {
                             transition={{ delay: 0.8, type: "spring", stiffness: 100, damping: 20 }}
                         >
                             <MagneticButton variant="primary" size="lg">
-                                <a href="#fragranze">Scopri le Fragranze</a>
+                                <a href="#fragranze">Scopri le fragranze</a>
                             </MagneticButton>
                             <MagneticButton variant="outline" size="lg" className="border-zinc-600 text-zinc-300 hover:bg-zinc-800">
-                                <a href="#storia">La Nostra Storia</a>
+                                <a href="#storia">Il nostro laboratorio</a>
                             </MagneticButton>
                         </motion.div>
                     </div>
