@@ -28,7 +28,7 @@ export default function BrandStory() {
                             Coliamo ogni candela a mano nel nostro laboratorio, in lotti piccoli. Cera di soia pura, niente paraffina, niente scorciatoie. Quello che mettiamo dentro è quello che senti quando la accendi.
                         </p>
                         <p className="mt-4 max-w-[50ch] text-base leading-relaxed text-zinc-400">
-                            Due fragranze, non venti. Perché prima di metterle in vendita le abbiamo bruciate per intero, una dopo l'altra. Solo queste due continuavano a sorprenderci fino all'ultima ora.
+                            Due fragranze, non venti. Perché prima di metterle in vendita le abbiamo bruciate per intero, una dopo l’altra. Solo queste due continuavano a sorprenderci fino all’ultima ora.
                         </p>
                     </RevealOnScroll>
 

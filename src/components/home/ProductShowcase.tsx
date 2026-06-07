@@ -170,7 +170,7 @@ export default function ProductShowcase({ onAddToCart }: ProductShowcaseProps) {
                         Due atmosfere, una stessa cura.
                     </h2>
                     <p className="mt-4 max-w-[55ch] text-base leading-relaxed text-zinc-500">
-                        Le componiamo nello stesso laboratorio, con la stessa cera e le stesse mani. A cambiare è solo l'atmosfera che decidi di accendere.
+                        Le componiamo nello stesso laboratorio, con la stessa cera e le stesse mani. A cambiare è solo l’atmosfera che decidi di accendere.
                     </p>
                 </RevealOnScroll>
 

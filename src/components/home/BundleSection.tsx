@@ -4,7 +4,6 @@ import Image from "next/image";
 import RevealOnScroll from "@/components/ui/RevealOnScroll";
 import MagneticButton from "@/components/ui/MagneticButton";
 import type { Product } from "@/components/home/ProductShowcase";
-import { products } from "@/components/home/ProductShowcase";
 
 const bundles = [
     {
@@ -15,7 +14,6 @@ const bundles = [
         price: 58,
         originalPrice: 68,
         image: "/images/bundle_1.webp",
-        products: ["butter", "berry"],
     },
     {
         id: "gift-set",
@@ -25,7 +23,6 @@ const bundles = [
         price: 62,
         originalPrice: 72,
         image: "/images/bundle_2.webp",
-        products: ["butter", "berry"],
     },
     {
         id: "discovery-box",
@@ -35,7 +32,6 @@ const bundles = [
         price: 65,
         originalPrice: 78,
         image: "/images/bundle_3.webp",
-        products: ["butter", "berry"],
     },
 ];
 
@@ -47,9 +43,17 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
     const handleAddBundle = (bundleId: string) => {
         const bundle = bundles.find((b) => b.id === bundleId);
         if (!bundle) return;
-        bundle.products.forEach((pid) => {
-            const product = products.find((p) => p.id === pid);
-            if (product) onAddToCart(product);
+        // Add the bundle as its own line at the discounted price, instead of
+        // adding the individual products at full price.
+        onAddToCart({
+            id: bundle.id,
+            name: bundle.name,
+            variant: "Cofanetto",
+            price: bundle.price,
+            description: bundle.description,
+            notes: [],
+            image: bundle.image,
+            accentColor: "text-accent",
         });
     };
 

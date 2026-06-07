@@ -33,7 +33,7 @@ export default function NewsletterSection() {
                         Una lettera al mese. Non di più.
                     </h2>
                     <p className="mx-auto mt-4 max-w-[45ch] text-base leading-relaxed text-zinc-400">
-                        Anteprime delle nuove fragranze, piccoli rituali da provare e qualche pensiero dal laboratorio. Quando ce n'è davvero da raccontare.
+                        Anteprime delle nuove fragranze, piccoli rituali da provare e qualche pensiero dal laboratorio. Quando ce n’è davvero da raccontare.
                     </p>
                 </RevealOnScroll>
 

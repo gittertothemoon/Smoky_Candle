@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smoky Candle
 
-## Getting Started
+Storefront vetrina per **Smoky Candle**, candele di soia artigianali Made in
+Italy. Single-page in italiano, animata, con catalogo, cofanetti e carrello
+client-side.
 
-First, run the development server:
+🔗 **Live:** https://smoky-candle.vercel.app
+
+## Caratteristiche
+
+- **Landing a sezioni** (`HomePage.tsx`): hero, marquee, showcase prodotti con
+  tilt 3D, video, cofanetti, brand story, gallery, testimonianze, newsletter.
+- **Catalogo + carrello** client-side: aggiunta prodotti e cofanetti, modifica
+  quantità, slide-over carrello con totale.
+- **Animazioni** con `framer-motion` (reveal allo scroll, magnetic button,
+  scroll progress) e tema dark.
+- **SEO forte**: Open Graph, Twitter card, JSON-LD Organization, manifest,
+  favicon multi-formato.
+
+## Stack
+
+| Ambito | Tecnologia |
+| --- | --- |
+| Framework | Next.js 16 (App Router) |
+| Linguaggio | TypeScript + React 19 |
+| Styling | Tailwind CSS v4 (config CSS-first), font Geist |
+| Animazioni | framer-motion |
+| Icone | @phosphor-icons/react |
+| Hosting | Vercel |
+
+## Sviluppo
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Script
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Comando | Descrizione |
+| --- | --- |
+| `npm run dev` | Dev server Next |
+| `npm run build` | Build di produzione |
+| `npm run start` | Server di produzione |
+| `npm run lint` | ESLint |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Stato
 
-## Learn More
+È una **vetrina marketing**: catalogo e carrello sono funzionanti lato client,
+mentre **checkout** e **newsletter** sono predisposti ma non collegati a un
+backend di pagamento/invio. I contenuti (prodotti, cofanetti) sono dati
+tipizzati nei componenti — nessun CMS né database.
 
-To learn more about Next.js, take a look at the following resources:
+## Struttura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/                  # layout (metadata, JSON-LD), page, globals.css
+├── components/
+│   ├── home/             # sezioni della landing
+│   ├── layout/           # Navbar, Footer
+│   ├── cart/             # CartModal
+│   └── ui/               # MagneticButton, RevealOnScroll, ScrollProgress
+└── lib/utils.ts          # helper cn()
+```

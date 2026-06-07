@@ -81,7 +81,7 @@ export default function HeroSection() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.6, type: "spring", stiffness: 100, damping: 20 }}
                         >
-                            Due fragranze pensate per accompagnare un'ora intera. Cera di soia colata a mano, fiamma lenta, profumo che si svela mentre l'ambiente si scalda.
+                            Due fragranze pensate per accompagnare un’ora intera. Cera di soia colata a mano, fiamma lenta, profumo che si svela mentre l’ambiente si scalda.
                         </motion.p>
 
                         {/* CTA */}
