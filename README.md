@@ -6,7 +6,7 @@ Showcase storefront for **Smoky Candle**, handcrafted soy candles made in Italy.
 Single-page, animated, in Italian, with a catalog, gift sets and a client-side
 cart.
 
-🔗 **Live:** https://smoky-candle.vercel.app
+🔗 **Live:** https://smokycandle.com
 
 ## Features
 
