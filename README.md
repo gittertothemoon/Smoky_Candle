@@ -1,65 +1,67 @@
 # Smoky Candle
 
-Storefront vetrina per **Smoky Candle**, candele di soia artigianali Made in
-Italy. Single-page in italiano, animata, con catalogo, cofanetti e carrello
-client-side.
+![Smoky Candle](public/images/hero-desktop.webp)
+
+Showcase storefront for **Smoky Candle**, handcrafted soy candles made in Italy.
+Single-page, animated, in Italian, with a catalog, gift sets and a client-side
+cart.
 
 🔗 **Live:** https://smoky-candle.vercel.app
 
-## Caratteristiche
+## Features
 
-- **Landing a sezioni** (`HomePage.tsx`): hero, marquee, showcase prodotti con
-  tilt 3D, video, cofanetti, brand story, gallery, testimonianze, newsletter.
-- **Catalogo + carrello** client-side: aggiunta prodotti e cofanetti, modifica
-  quantità, slide-over carrello con totale.
-- **Animazioni** con `framer-motion` (reveal allo scroll, magnetic button,
-  scroll progress) e tema dark.
-- **SEO forte**: Open Graph, Twitter card, JSON-LD Organization, manifest,
-  favicon multi-formato.
+- **Section-based landing** (`HomePage.tsx`): hero, marquee, product showcase
+  with 3D tilt, video, gift sets, brand story, gallery, testimonials, newsletter.
+- **Catalog + cart** (client-side): add products and gift sets, change quantity,
+  slide-over cart with total.
+- **Animations** with `framer-motion` (scroll reveal, magnetic button, scroll
+  progress) and a dark theme.
+- **Strong SEO**: Open Graph, Twitter card, JSON-LD Organization, manifest,
+  multi-format favicons.
 
 ## Stack
 
-| Ambito | Tecnologia |
+| Area | Technology |
 | --- | --- |
 | Framework | Next.js 16 (App Router) |
-| Linguaggio | TypeScript + React 19 |
-| Styling | Tailwind CSS v4 (config CSS-first), font Geist |
-| Animazioni | framer-motion |
-| Icone | @phosphor-icons/react |
+| Language | TypeScript + React 19 |
+| Styling | Tailwind CSS v4 (CSS-first config), Geist font |
+| Animation | framer-motion |
+| Icons | @phosphor-icons/react |
 | Hosting | Vercel |
 
-## Sviluppo
+## Development
 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
 ```
 
-### Script
+### Scripts
 
-| Comando | Descrizione |
+| Command | Description |
 | --- | --- |
-| `npm run dev` | Dev server Next |
-| `npm run build` | Build di produzione |
-| `npm run start` | Server di produzione |
+| `npm run dev` | Next dev server |
+| `npm run build` | Production build |
+| `npm run start` | Production server |
 | `npm run lint` | ESLint |
 
-## Stato
+## Status
 
-È una **vetrina marketing**: catalogo e carrello sono funzionanti lato client,
-mentre **checkout** e **newsletter** sono predisposti ma non collegati a un
-backend di pagamento/invio. I contenuti (prodotti, cofanetti) sono dati
-tipizzati nei componenti — nessun CMS né database.
+This is a **marketing storefront**: the catalog and cart work client-side, while
+**checkout** and **newsletter** are scaffolded but not yet wired to a
+payment/delivery backend. Content (products, gift sets) is typed data inside the
+components — no CMS or database.
 
-## Struttura
+## Structure
 
 ```
 src/
 ├── app/                  # layout (metadata, JSON-LD), page, globals.css
 ├── components/
-│   ├── home/             # sezioni della landing
+│   ├── home/             # landing sections
 │   ├── layout/           # Navbar, Footer
 │   ├── cart/             # CartModal
 │   └── ui/               # MagneticButton, RevealOnScroll, ScrollProgress
-└── lib/utils.ts          # helper cn()
+└── lib/utils.ts          # cn() helper
 ```
