@@ -77,7 +77,7 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
                                         aria-checked={scelto}
                                         onClick={() => vaiA(i)}
                                         className={`flex min-h-12 w-full items-baseline justify-between gap-4 py-3 text-left transition-colors duration-300 md:min-h-16 md:py-4 ${
-                                            scelto ? "text-carta" : "text-carta/45 hover:text-carta/80"
+                                            scelto ? "text-carta" : "text-carta/60 hover:text-carta/85"
                                         }`}
                                     >
                                         <span className="font-serif text-[clamp(1.5rem,3.2vw,2.75rem)] leading-none">{c.nome}</span>

@@ -7,7 +7,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Billboard, Environment, Lightformer, MeshTransmissionMaterial, RoundedBox } from "@react-three/drei";
+import { MeshTransmissionMaterial } from "@react-three/drei";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import type { Atmosfera } from "@/lib/catalogo";
 import { FASI_COFANETTI } from "@/lib/fasiCofanetti";
 
@@ -33,6 +34,73 @@ const TINTE: Record<Atmosfera, { luce: string; punta: THREE.Color }> = {
     butter: { luce: "#ffd6a8", punta: new THREE.Color("#e0621e") },
     berry: { luce: "#ffd0c4", punta: new THREE.Color("#d2344f") },
 };
+
+/* ---------- tre pezzi fatti in casa al posto di quelli di drei ----------
+ * L'ambiente di drei si portava dietro i lettori di immagini HDR ed EXR (qui mai usati): quasi un terzo
+ * del peso del 3D, che il telefono doveva leggere proprio mentre la pagina diventava reattiva. */
+
+/* La luce di studio che si riflette su vetro, tappi e raso: tre pannelli luminosi fotografati una volta sola */
+function Ambiente() {
+    const { gl, scene } = useThree();
+    useEffect(() => {
+        const studio = new THREE.Scene();
+        const pannelli: [THREE.BufferGeometry, string, number, [number, number, number], [number, number, number]][] = [
+            [new THREE.PlaneGeometry(1, 1), "#fff4e6", 1.2, [-4, 2, 3], [3, 5, 1]],
+            [new THREE.PlaneGeometry(1, 1), "#ffd9b0", 0.6, [4, 1, -2], [2, 4, 1]],
+            [new THREE.RingGeometry(0.5, 1, 64), "#ffffff", 0.8, [0, 5, 0], [2, 2, 2]],
+        ];
+        const materiali: THREE.Material[] = [];
+        for (const [geo, colore, forza, pos, scala] of pannelli) {
+            const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(colore).multiplyScalar(forza), side: THREE.DoubleSide, toneMapped: false });
+            materiali.push(m);
+            const pannello = new THREE.Mesh(geo, m);
+            pannello.position.set(...pos);
+            pannello.scale.set(...scala);
+            pannello.lookAt(0, 0, 0);
+            studio.add(pannello);
+        }
+        const pmrem = new THREE.PMREMGenerator(gl);
+        const mappa = pmrem.fromScene(studio, 0, 0.1, 100);
+        scene.environment = mappa.texture;
+        return () => {
+            scene.environment = null;
+            mappa.dispose();
+            pmrem.dispose();
+            materiali.forEach((m) => m.dispose());
+            pannelli.forEach(([geo]) => geo.dispose());
+        };
+    }, [gl, scene]);
+    return null;
+}
+
+/* Un piano che guarda sempre la camera, anche se chi lo contiene ruota (con gli assi bloccabili) */
+const qGenitore = new THREE.Quaternion();
+const eBillboard = new THREE.Euler();
+function Billboard({ lockX = false, lockZ = false, children }: { lockX?: boolean; lockZ?: boolean; children: React.ReactNode }) {
+    const g = useRef<THREE.Group>(null);
+    useFrame(({ camera }) => {
+        const o = g.current;
+        if (!o?.parent) return;
+        o.parent.getWorldQuaternion(qGenitore);
+        o.quaternion.copy(qGenitore.invert().multiply(camera.quaternion));
+        if (lockX || lockZ) {
+            eBillboard.setFromQuaternion(o.quaternion);
+            if (lockX) eBillboard.x = 0;
+            if (lockZ) eBillboard.z = 0;
+            o.rotation.copy(eBillboard);
+        }
+    });
+    return <group ref={g}>{children}</group>;
+}
+
+/* Un blocco con gli spigoli arrotondati */
+type PropsMesh = Omit<React.ComponentProps<"mesh">, "args">;
+function RoundedBox({ args, radius, smoothness, ...resto }: PropsMesh & { args: [number, number, number]; radius: number; smoothness: number }) {
+    const [l, a, p] = args;
+    const geo = useMemo(() => new RoundedBoxGeometry(l, a, p, smoothness, radius), [l, a, p, smoothness, radius]);
+    useEffect(() => () => geo.dispose(), [geo]);
+    return <mesh geometry={geo} {...resto} />;
+}
 
 /* ---------- la fiamma: una goccia di luce disegnata in shader ---------- */
 
@@ -1480,11 +1548,7 @@ function Scena({ schermo, chiusura, regia, scatola, onApri, onAperta, tappo, onS
             <directionalLight position={[-3, 4, 3]} intensity={0.35} color="#c8d0e0" />
             <pointLight ref={luce} distance={6} decay={2} intensity={0} color="#ffd2a0" />
 
-            <Environment resolution={256} frames={1}>
-                <Lightformer form="rect" intensity={1.2} position={[-4, 2, 3]} scale={[3, 5, 1]} color="#fff4e6" />
-                <Lightformer form="rect" intensity={0.6} position={[4, 1, -2]} scale={[2, 4, 1]} color="#ffd9b0" />
-                <Lightformer form="ring" intensity={0.8} position={[0, 5, 0]} scale={2} rotation-x={Math.PI / 2} />
-            </Environment>
+            <Ambiente />
 
             <group position={[0, -1.25, 0]} visible={pronta}>
                 {scatola !== "via" ? (

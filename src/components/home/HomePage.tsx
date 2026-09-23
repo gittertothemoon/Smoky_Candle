@@ -23,15 +23,31 @@ export default function HomePage() {
     const ridotto = useMovimentoRidotto();
     // il 3D parte quando la pagina è già in piedi: prima testo e immagini, poi la candela
     const [tre, setTre] = useState(false);
+    // (e solo a caricamento finito: il motore 3D pesa, e sul telefono non deve rubare il processore
+    // proprio mentre la pagina diventa toccabile. La candela entra comunque in dissolvenza)
     useEffect(() => {
-        const avvia = () => setTre(true);
-        const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
-        if (w.requestIdleCallback) {
-            const id = w.requestIdleCallback(avvia, { timeout: 1500 });
-            return () => (window as Window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback?.(id);
-        }
-        const t = setTimeout(avvia, 600);
-        return () => clearTimeout(t);
+        let annullato = false;
+        let id = 0;
+        let t: ReturnType<typeof setTimeout> | undefined;
+        const w = window as Window & {
+            requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+            cancelIdleCallback?: (id: number) => void;
+        };
+        const avvia = () => {
+            if (!annullato) setTre(true);
+        };
+        const quandoLibero = () => {
+            if (w.requestIdleCallback) id = w.requestIdleCallback(avvia, { timeout: 2000 });
+            else t = setTimeout(avvia, 300);
+        };
+        if (document.readyState === "complete") quandoLibero();
+        else window.addEventListener("load", quandoLibero, { once: true });
+        return () => {
+            annullato = true;
+            window.removeEventListener("load", quandoLibero);
+            if (id) w.cancelIdleCallback?.(id);
+            if (t) clearTimeout(t);
+        };
     }, []);
     // quando fragranze o cofanetti arrivano a metà schermo la candela si scopre da sola (anche dopo un salto con un link)
     const { scopri } = candela;
