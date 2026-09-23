@@ -1,115 +1,202 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
-import MagneticButton from "@/components/ui/MagneticButton";
-import Image from "next/image";
+import { SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useMovimentoRidotto } from "@/lib/movimento";
+import Arco, { ASPETTO_PORTONE } from "@/components/home/Arco";
+import type { Candela } from "@/components/home/useCandela";
+import { scene, type Atmosfera } from "@/lib/catalogo";
 
-export default function HeroSection() {
-    const containerRef = useRef(null);
-    const { scrollYProgress } = useScroll({
-        target: containerRef,
-        offset: ["start start", "end start"],
+const ORE_TOTALI = 40;
+
+interface HeroProps {
+    atmosfera: Atmosfera;
+    onAtmosfera: (a: Atmosfera) => void;
+    candela: Candela;
+}
+
+const scelte: { id: Atmosfera; nome: string; colore: string }[] = [
+    { id: "butter", nome: "Butter", colore: "bg-ambra" },
+    { id: "berry", nome: "Berry", colore: "bg-vino" },
+];
+
+export default function HeroSection({ atmosfera, onAtmosfera, candela }: HeroProps) {
+    const ridotto = useMovimentoRidotto();
+    const { acceso, spentaConSoffio, ore, finita, girabile, scatola, apri, muto, setMuto, alterna, nuovaCandela } = candela;
+
+    // l'animazione d'ingresso ha sempre un traguardo: se "Riduci movimento" arriva dopo l'idratazione,
+    // gli elementi non devono restare fermi a trasparenza zero (era il vuoto visto su iPhone)
+    const entra = (ritardo: number) => ({
+        initial: { opacity: 0, y: 16 },
+        animate: { opacity: 1, y: 0 },
+        transition: ridotto
+            ? { duration: 0 }
+            : { delay: ritardo, duration: 0.8, ease: [0.22, 0.61, 0.36, 1] as const },
     });
 
-    const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-    const textY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-    const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+    const scena = scene[atmosfera];
 
     return (
-        <section
-            ref={containerRef}
-            className="relative min-h-[100dvh] overflow-hidden bg-zinc-950"
-        >
-            {/* Background Image with Parallax — art-directed mobile vs desktop */}
-            <motion.div className="absolute inset-0" style={{ y: bgY }}>
-                <Image
-                    src="/images/hero-mobile.webp"
-                    alt="Candele Smoky Candle in cera di soia"
-                    fill
-                    className="object-cover opacity-60 md:hidden"
-                    priority
-                    sizes="100vw"
-                />
-                <Image
-                    src="/images/hero-desktop.webp"
-                    alt=""
-                    aria-hidden
-                    fill
-                    className="hidden object-cover opacity-60 md:block"
-                    priority
-                    sizes="100vw"
-                />
-                {/* Gradient overlays */}
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/50 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-zinc-950/30" />
-            </motion.div>
+        <section className="relative isolate overflow-hidden bg-fuliggine text-carta">
+            {/* la luce della candela che riempie la stanza */}
+            <div
+                aria-hidden="true"
+                className="luce-stanza pointer-events-none absolute inset-0 -z-10 transition-opacity duration-[1800ms]"
+                style={{ opacity: acceso ? 1 : 0 }}
+            />
 
-            {/* Content — Asymmetric left-aligned per SKILL.md */}
-            <motion.div
-                className="relative z-10 flex min-h-[100dvh] items-center"
-                style={{ y: textY, opacity }}
-            >
-                <div className="mx-auto w-full max-w-7xl px-6">
-                    <div className="max-w-2xl">
-                        {/* Eyebrow */}
-                        <motion.p
-                            className="mb-4 text-sm font-medium uppercase tracking-[0.25em] text-accent"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, type: "spring", stiffness: 100, damping: 20 }}
+            <div className="mx-auto grid min-h-[100svh] max-w-[1320px] grid-cols-1 content-start items-center gap-3 px-4 pt-[4.5rem] pb-14 sm:px-6 md:min-h-[100dvh] md:grid-cols-12 md:content-center md:gap-6 md:pt-24 lg:px-10">
+                <div className="order-2 flex flex-col md:order-1 md:col-span-6 md:block lg:col-span-5">
+                    {/* titolo e testo si vedono subito: sono il primo contenuto della pagina, niente dissolvenza */}
+                    <h1 className="order-1 font-serif text-[clamp(2.4rem,9vw,5.75rem)] leading-[0.95] tracking-[-0.02em] md:text-[clamp(2.75rem,7vw,5.75rem)]">
+                        Accendi,
+                        <br />
+                        <span
+                            className="transition-opacity duration-[1600ms]"
+                            style={{ opacity: acceso ? 1 : 0.38 }}
                         >
-                            Cera di soia · Versate a mano in Italia
-                        </motion.p>
+                            la stanza respira.
+                        </span>
+                    </h1>
 
-                        {/* Main Heading */}
-                        <motion.h1
-                            className="text-4xl font-bold leading-none tracking-tighter text-zinc-50 md:text-6xl lg:text-7xl"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4, type: "spring", stiffness: 100, damping: 20 }}
-                        >
-                            Accendi,
-                            <br />
-                            <span className="text-zinc-400">la stanza respira.</span>
-                        </motion.h1>
+                    <p className="order-5 mt-4 max-w-[42ch] text-base leading-relaxed text-carta/75 md:mt-7 md:text-lg">
+                        Due candele in cera di soia, colate a mano in Italia in piccoli lotti. Stoppino in legno che crepita piano, oltre quaranta ore di luce.
+                    </p>
 
-                        {/* Description */}
-                        <motion.p
-                            className="mt-6 max-w-[50ch] text-base leading-relaxed text-zinc-400 md:text-lg"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6, type: "spring", stiffness: 100, damping: 20 }}
+                    <motion.div className="order-2 mt-5 flex flex-wrap items-center gap-x-6 gap-y-4 md:mt-9" {...entra(1.6)}>
+                        {scatola !== "via" && !ridotto ? (
+                        <button
+                            type="button"
+                            onClick={apri}
+                            className="inline-flex min-h-12 items-center rounded-full bg-carta px-7 text-base text-fuliggine transition-colors hover:bg-white"
                         >
-                            Due fragranze pensate per accompagnare un'ora intera. Cera di soia colata a mano, fiamma lenta, profumo che si svela mentre l'ambiente si scalda.
-                        </motion.p>
+                            Apri la scatola
+                        </button>
+                        ) : finita ? (
+                        <button
+                            type="button"
+                            onClick={nuovaCandela}
+                            className="inline-flex min-h-12 items-center rounded-full bg-carta px-7 text-base text-fuliggine transition-colors hover:bg-white"
+                        >
+                            Accendine un&apos;altra
+                        </button>
+                        ) : (
+                        <button
+                            type="button"
+                            onClick={alterna}
+                            aria-pressed={acceso}
+                            className={`inline-flex min-h-12 items-center rounded-full px-7 text-base transition-colors duration-500 ${
+                                acceso
+                                    ? "border border-carta/35 text-carta hover:bg-carta/10"
+                                    : "bg-carta text-fuliggine hover:bg-white"
+                            }`}
+                        >
+                            {acceso ? "Spegni la candela" : "Accendi la candela"}
+                        </button>
+                        )}
+                        <a
+                            href="#fragranze"
+                            className="text-base text-carta underline decoration-carta/30 underline-offset-4 transition-colors hover:decoration-carta"
+                        >
+                            Vedi le fragranze
+                        </a>
+                    </motion.div>
 
-                        {/* CTA */}
-                        <motion.div
-                            className="mt-10 flex flex-wrap gap-4"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.8, type: "spring", stiffness: 100, damping: 20 }}
+                    {scatola === "via" && (
+                        <button
+                            type="button"
+                            onClick={() => setMuto((m) => !m)}
+                            aria-pressed={!muto}
+                            className="order-4 mt-3 inline-flex min-h-11 items-center gap-2 self-start rounded-full pr-3 text-sm text-carta/70 transition-colors hover:text-carta md:mt-4"
                         >
-                            <MagneticButton variant="primary" size="lg">
-                                <a href="#fragranze">Scopri le fragranze</a>
-                            </MagneticButton>
-                            <MagneticButton variant="outline" size="lg" className="border-zinc-600 text-zinc-300 hover:bg-zinc-800">
-                                <a href="#storia">Il nostro laboratorio</a>
-                            </MagneticButton>
-                        </motion.div>
+                            {muto ? <SpeakerSlash size={18} aria-hidden="true" /> : <SpeakerHigh size={18} aria-hidden="true" />}
+                            {muto ? "Suono spento" : "Suono acceso: lo stoppino crepita"}
+                        </button>
+                    )}
+
+                    <div className="order-4 mt-1 min-h-[1.5rem] max-w-[44ch] text-sm leading-relaxed text-carta/60 md:mt-3 md:min-h-[3.25rem]" aria-live="polite">
+                        {ore > 0 && (
+                            <p className="tabular-nums text-carta/70">
+                                {ore} ore di {ORE_TOTALI}
+                            </p>
+                        )}
+                        <AnimatePresence mode="wait">
+                            {scatola === "chiusa" && !ridotto ? (
+                                <motion.p key="scatola" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 1.8 } }} exit={{ opacity: 0 }}>
+                                    {girabile ? "Afferra il coperchio e tiralo su, oppure cliccaci sopra." : "Tocca la scatola per aprirla."}
+                                </motion.p>
+                            ) : finita ? (
+                                <motion.p key="finita" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    Quaranta ore, tutte. Adesso il vetro è tuo: fiori secchi, pennelli, quello che vuoi.
+                                </motion.p>
+                            ) : acceso ? (
+                                <motion.p key="soffia" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 1.2 } }} exit={{ opacity: 0 }}>
+                                    Passaci sopra veloce e la spegni come con un soffio.{girabile ? " Trascinala per girarla." : ""}
+                                </motion.p>
+                            ) : spentaConSoffio ? (
+                                <motion.p key="spenta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                    Spenta. Guarda il fumo che sale dallo stoppino.
+                                </motion.p>
+                            ) : null}
+                        </AnimatePresence>
+                    </div>
+
+                    <motion.div className="order-3 mt-5 md:mt-6" {...entra(1.75)}>
+                        <p id="scegli-atmosfera" className="sr-only text-sm text-carta/60 md:not-sr-only">
+                            Scegli l&apos;atmosfera
+                        </p>
+                        <div
+                            role="radiogroup"
+                            aria-labelledby="scegli-atmosfera"
+                            className="inline-flex rounded-full border border-carta/15 p-1 md:mt-3"
+                        >
+                            {scelte.map((s) => {
+                                const attiva = s.id === atmosfera;
+                                return (
+                                    <button
+                                        key={s.id}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={attiva}
+                                        onClick={() => onAtmosfera(s.id)}
+                                        className={`relative flex min-h-11 items-center gap-2.5 rounded-full px-5 text-base transition-colors duration-500 ${
+                                            attiva ? "text-carta" : "text-carta/70 hover:text-carta"
+                                        }`}
+                                    >
+                                        {attiva && (
+                                            <motion.span
+                                                layoutId="atmosfera-attiva"
+                                                className="absolute inset-0 rounded-full bg-accento transizione-accento"
+                                                transition={{ type: "spring", stiffness: 380, damping: 34 }}
+                                            />
+                                        )}
+                                        <span className={`relative h-2.5 w-2.5 rounded-full ${s.colore} ring-1 ring-carta/50`} aria-hidden="true" />
+                                        <span className="relative">{s.nome}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <p className="mt-2 font-serif text-base text-carta/85 md:mt-3 md:text-lg">{scena.riga}</p>
+                    </motion.div>
+                </div>
+
+                <div className="order-1 md:order-2 md:col-span-6 lg:col-start-7">
+                    <div
+                        className="relative mx-auto w-full max-w-[15rem] sm:max-w-[30rem] md:max-w-[42rem]"
+                        style={{ aspectRatio: ASPETTO_PORTONE }}
+                    >
+                        <Arco acceso={acceso} luce={atmosfera === "berry" ? "#f3cfc6" : "#f2d8b6"} />
+                        {/* qui si ferma la candela 3D, che vive in un livello unico sopra la pagina */}
+                        <div
+                            data-ancora="hero"
+                            data-altezza="0.52"
+                            data-centro-y="0.64"
+                            className="absolute"
+                            style={{ left: "10%", right: "10%", top: 0, bottom: 0 }}
+                        />
                     </div>
                 </div>
-            </motion.div>
-
-            {/* Scroll indicator */}
-            <motion.div
-                className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
-                animate={{ y: [0, 10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            >
-                <div className="h-14 w-[1px] bg-gradient-to-b from-transparent via-zinc-500 to-transparent" />
-            </motion.div>
+            </div>
         </section>
     );
 }

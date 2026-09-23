@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Young_Serif, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const youngSerif = Young_Serif({
+  variable: "--font-young-serif",
   subsets: ["latin"],
+  weight: "400",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const hanken = Hanken_Grotesk({
+  variable: "--font-hanken",
   subsets: ["latin"],
 });
 
@@ -47,6 +48,9 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   manifest: "/site.webmanifest",
+  // Safari su iPhone trasforma da solo numeri, email e indirizzi in link: il testo cambia
+  // prima che React si agganci e la pagina va in errore di idratazione
+  formatDetection: { telephone: false, email: false, address: false },
 };
 
 export default function RootLayout({
@@ -55,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it" className="scroll-smooth">
+    <html lang="it">
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -64,12 +68,12 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${youngSerif.variable} ${hanken.variable} antialiased`}
         suppressHydrationWarning
       >
         <a
           href="#fragranze"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-zinc-900"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-fuliggine focus:px-4 focus:py-2 focus:text-sm focus:text-carta"
         >
           Vai al contenuto principale
         </a>

@@ -1,135 +1,72 @@
 "use client";
 
 import Image from "next/image";
-import RevealOnScroll from "@/components/ui/RevealOnScroll";
-import MagneticButton from "@/components/ui/MagneticButton";
-import type { Product } from "@/components/home/ProductShowcase";
-import { products } from "@/components/home/ProductShowcase";
-
-const bundles = [
-    {
-        id: "duo-pack",
-        name: "Duo",
-        description:
-            "Butter e Berry, una accanto all'altra. La scelta perfetta per chi vuole vivere entrambe le atmosfere.",
-        price: 58,
-        originalPrice: 68,
-        image: "/images/bundle_1.webp",
-        products: ["butter", "berry"],
-    },
-    {
-        id: "gift-set",
-        name: "Cofanetto regalo",
-        description:
-            "Le due fragranze custodite in una scatola rigida nera. Arriva pronta da consegnare, senza nessun incarto da aggiungere.",
-        price: 62,
-        originalPrice: 72,
-        image: "/images/bundle_2.webp",
-        products: ["butter", "berry"],
-    },
-    {
-        id: "discovery-box",
-        name: "Discovery Box",
-        description:
-            "Il Duo con un biglietto scritto a mano dalle nostre mani. Per i momenti in cui un regalo deve dire qualcosa di tuo.",
-        price: 65,
-        originalPrice: 78,
-        image: "/images/bundle_3.webp",
-        products: ["butter", "berry"],
-    },
-];
+import { cofanetti, type Articolo } from "@/lib/catalogo";
 
 interface BundleSectionProps {
-    onAddToCart: (product: Product) => void;
+    onAddToCart: (articolo: Articolo) => void;
 }
 
 export default function BundleSection({ onAddToCart }: BundleSectionProps) {
-    const handleAddBundle = (bundleId: string) => {
-        const bundle = bundles.find((b) => b.id === bundleId);
-        if (!bundle) return;
-        bundle.products.forEach((pid) => {
-            const product = products.find((p) => p.id === pid);
-            if (product) onAddToCart(product);
-        });
-    };
-
     return (
-        <section className="relative bg-zinc-950 py-24 md:py-32">
-            <div className="mx-auto max-w-7xl px-6">
-                <RevealOnScroll>
-                    <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
-                        Cofanetti
-                    </p>
-                    <h2 className="mt-3 text-3xl font-bold tracking-tighter text-zinc-50 md:text-5xl">
+        <>
+        {/* scena ferma: mentre scorri la candela torna nella sua scatola, pronta da regalare */}
+        <section id="cofanetti" className="relative h-[220vh] bg-fuliggine text-carta">
+            <div className="sticky top-0 mx-auto flex h-[100dvh] max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
+                {/* telefono: la scatola sta sopra il testo, in un posto fisso: il coperchio scende da dove non c'è niente da leggere */}
+                <div className="relative h-[44svh] shrink-0 md:hidden">
+                    <div data-ancora="cofanetti" data-altezza="0.64" data-centro-y="0.58" className="absolute inset-0" />
+                </div>
+
+                <div className="md:col-span-6 lg:col-span-5">
+                    <h2 className="font-serif text-[clamp(2.5rem,6vw,5rem)] leading-[0.95] tracking-[-0.015em]">
                         Pensati per essere regalati.
                     </h2>
-                    <p className="mt-4 max-w-[50ch] text-base leading-relaxed text-zinc-500">
-                        Tre modi diversi di portare le nostre fragranze a chi vuoi bene. Ognuno con la sua personalità.
+                    <p className="mt-6 max-w-[42ch] text-lg leading-relaxed text-carta/75">
+                        Ogni candela parte nella sua scatola a tubo, bianca, col portone stampato davanti. Si apre come l&apos;hai aperta tu qui sopra.
                     </p>
-                </RevealOnScroll>
-
-                {/* Horizontal scroll cards */}
-                <div className="mt-16 -mx-6 px-6">
-                    <div className="flex gap-6 overflow-x-auto no-scrollbar pb-4 snap-x snap-mandatory">
-                        {bundles.map((bundle, i) => (
-                            <RevealOnScroll key={bundle.id} delay={i * 0.1}>
-                                <div className="w-[320px] flex-shrink-0 snap-start md:w-[380px]">
-                                    <div className="group relative overflow-hidden rounded-[2rem] bg-zinc-900 border border-zinc-800/50">
-                                        {/* Image */}
-                                        <div className="relative aspect-square overflow-hidden">
-                                            <Image
-                                                src={bundle.image}
-                                                alt={bundle.name}
-                                                fill
-                                                className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                                sizes="380px"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
-                                            {/* Discount badge */}
-                                            <div className="absolute top-4 right-4 rounded-full bg-accent px-3 py-1 text-xs font-bold text-zinc-900">
-                                                -{Math.round(
-                                                    ((bundle.originalPrice - bundle.price) /
-                                                        bundle.originalPrice) *
-                                                    100
-                                                )}
-                                                %
-                                            </div>
-                                        </div>
-
-                                        {/* Info */}
-                                        <div className="p-6">
-                                            <h3 className="text-xl font-bold tracking-tight text-zinc-100">
-                                                {bundle.name}
-                                            </h3>
-                                            <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-                                                {bundle.description}
-                                            </p>
-                                            <div className="mt-4 flex items-center gap-3">
-                                                <span className="text-2xl font-bold tracking-tight text-zinc-50">
-                                                    {bundle.price}&euro;
-                                                </span>
-                                                <span className="text-sm text-zinc-600 line-through">
-                                                    {bundle.originalPrice}&euro;
-                                                </span>
-                                            </div>
-                                            <div className="mt-4">
-                                                <MagneticButton
-                                                    variant="primary"
-                                                    size="md"
-                                                    onClick={() => handleAddBundle(bundle.id)}
-                                                    className="w-full justify-center"
-                                                >
-                                                    Aggiungi al carrello
-                                                </MagneticButton>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </RevealOnScroll>
-                        ))}
-                    </div>
+                    <p className="mt-4 max-w-[42ch] text-base leading-relaxed text-carta/55">
+                        Le stesse due candele, in tre confezioni diverse. Spedizione gratuita in Italia, consegna in 2-4 giorni.
+                    </p>
+                </div>
+                <div className="relative hidden min-h-0 md:col-span-6 md:col-start-7 md:block md:h-full">
+                    <div data-ancora="cofanetti" data-altezza="0.66" data-centro-y="0.52" className="absolute inset-0" />
                 </div>
             </div>
         </section>
+
+        <section aria-label="I cofanetti" className="bg-carta">
+            <div className="mx-auto max-w-[1320px] px-4 py-24 sm:px-6 md:py-28 lg:px-10">
+
+                <ul className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+                    {cofanetti.map((c) => (
+                        <li key={c.id} className="flex flex-col">
+                            <div className="relative aspect-square overflow-hidden bg-cenere-scura">
+                                <Image
+                                    src={c.immagine}
+                                    alt={`Cofanetto ${c.nome}`}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                />
+                            </div>
+                            <div className="mt-6 flex items-baseline justify-between gap-4">
+                                <h3 className="font-serif text-3xl">{c.nome}</h3>
+                                <p className="font-serif text-2xl">{c.prezzo}&nbsp;&euro;</p>
+                            </div>
+                            <p className="mt-3 max-w-[40ch] flex-1 text-base leading-relaxed text-fumo">{c.descrizione}</p>
+                            <button
+                                type="button"
+                                onClick={() => onAddToCart(c)}
+                                className="mt-6 inline-flex min-h-12 items-center justify-center self-start rounded-full border border-fuliggine/25 px-6 text-base text-fuliggine transition-colors hover:border-fuliggine hover:bg-fuliggine hover:text-carta"
+                            >
+                                Aggiungi al carrello
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </section>
+        </>
     );
 }

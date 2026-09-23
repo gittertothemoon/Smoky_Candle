@@ -1,189 +1,160 @@
 "use client";
 
-import { useRef } from "react";
-import {
-    motion,
-    useMotionValue,
-    useSpring,
-    useTransform,
-} from "framer-motion";
-import Image from "next/image";
-import RevealOnScroll from "@/components/ui/RevealOnScroll";
-import MagneticButton from "@/components/ui/MagneticButton";
-
-export interface Product {
-    id: string;
-    name: string;
-    variant: string;
-    price: number;
-    description: string;
-    notes: string[];
-    image: string;
-    accentColor: string;
-}
-
-export const products: Product[] = [
-    {
-        id: "butter",
-        name: "Smoky Candle",
-        variant: "Butter",
-        price: 34,
-        description:
-            "Vaniglia bourbon, burro caldo, una scia di cedro sul fondo. La fragranza che chiama il divano, una coperta e le sere lunghe.",
-        notes: ["Vaniglia", "Burro fuso", "Legno di cedro"],
-        image: "/images/butter.webp",
-        accentColor: "text-amber-300",
-    },
-    {
-        id: "berry",
-        name: "Smoky Candle",
-        variant: "Berry",
-        price: 34,
-        description:
-            "Frutti di bosco appena raccolti, rosa damascena, muschio bianco. Apre la stanza con leggerezza, lascia respirare l'aria.",
-        notes: ["Frutti di bosco", "Rosa damascena", "Muschio bianco"],
-        image: "/images/berry.webp",
-        accentColor: "text-rose-400",
-    },
-];
-
-function TiltCard({
-    product,
-    onAddToCart,
-}: {
-    product: Product;
-    onAddToCart: (p: Product) => void;
-}) {
-    const cardRef = useRef<HTMLDivElement>(null);
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-
-    const springX = useSpring(x, { stiffness: 150, damping: 20 });
-    const springY = useSpring(y, { stiffness: 150, damping: 20 });
-
-    const rotateX = useTransform(springY, [-0.5, 0.5], [8, -8]);
-    const rotateY = useTransform(springX, [-0.5, 0.5], [-8, 8]);
-
-    function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-        const rect = cardRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        const px = (e.clientX - rect.left) / rect.width - 0.5;
-        const py = (e.clientY - rect.top) / rect.height - 0.5;
-        x.set(px);
-        y.set(py);
-    }
-
-    function handleMouseLeave() {
-        x.set(0);
-        y.set(0);
-    }
-
-    return (
-        <motion.div
-            ref={cardRef}
-            className="group relative"
-            style={{
-                rotateX,
-                rotateY,
-                transformPerspective: 1200,
-                transformStyle: "preserve-3d",
-            }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-        >
-            {/* Card */}
-            <div className="relative overflow-hidden rounded-[2rem] bg-zinc-900 border border-zinc-800/50">
-                {/* Image */}
-                <div className="relative aspect-square w-full overflow-hidden">
-                    <Image
-                        src={product.image}
-                        alt={`${product.name} ${product.variant}`}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-900 to-transparent" />
-                </div>
-
-                {/* Info panel — separato dall'immagine per leggibilità */}
-                <div className="relative px-8 pt-7 pb-8">
-                    <p
-                        className={`text-sm font-medium uppercase tracking-[0.2em] ${product.accentColor}`}
-                    >
-                        {product.variant}
-                    </p>
-                    <h3 className="mt-2 text-2xl font-bold tracking-tighter text-zinc-50 md:text-3xl">
-                        {product.name}
-                    </h3>
-                    <p className="mt-3 max-w-[40ch] text-sm leading-relaxed text-zinc-300">
-                        {product.description}
-                    </p>
-                    {/* Notes */}
-                    <div className="mt-5 flex flex-wrap gap-2">
-                        {product.notes.map((note) => (
-                            <span
-                                key={note}
-                                className="rounded-full border border-zinc-700 bg-zinc-900/60 px-3 py-1 text-xs text-zinc-300"
-                            >
-                                {note}
-                            </span>
-                        ))}
-                    </div>
-                    {/* Price + CTA */}
-                    <div className="mt-7 flex items-center justify-between border-t border-zinc-800/70 pt-6">
-                        <div className="flex flex-col">
-                            <span className="text-[0.65rem] uppercase tracking-[0.2em] text-zinc-500">
-                                Prezzo
-                            </span>
-                            <span className="text-2xl font-bold tracking-tight text-zinc-50">
-                                {product.price}&euro;
-                            </span>
-                        </div>
-                        <MagneticButton
-                            variant="primary"
-                            size="md"
-                            onClick={() => onAddToCart(product)}
-                        >
-                            Aggiungi al carrello
-                        </MagneticButton>
-                    </div>
-                </div>
-            </div>
-        </motion.div>
-    );
-}
+import { useRef, useState } from "react";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
+import { fragranze, type Articolo, type Atmosfera } from "@/lib/catalogo";
 
 interface ProductShowcaseProps {
-    onAddToCart: (product: Product) => void;
+    atmosfera: Atmosfera;
+    onAtmosfera: (a: Atmosfera) => void;
+    onAddToCart: (articolo: Articolo) => void;
 }
 
-export default function ProductShowcase({ onAddToCart }: ProductShowcaseProps) {
-    return (
-        <section id="fragranze" className="relative bg-zinc-950 py-24 md:py-32">
-            <div className="mx-auto max-w-7xl px-6">
-                {/* Section header */}
-                <RevealOnScroll>
-                    <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
-                        Le fragranze
-                    </p>
-                    <h2 className="mt-3 text-3xl font-bold tracking-tighter text-zinc-50 md:text-5xl">
-                        Due atmosfere, una stessa cura.
-                    </h2>
-                    <p className="mt-4 max-w-[55ch] text-base leading-relaxed text-zinc-500">
-                        Le componiamo nello stesso laboratorio, con la stessa cera e le stesse mani. A cambiare è solo l'atmosfera che decidi di accendere.
-                    </p>
-                </RevealOnScroll>
+const coloreDi: Record<Atmosfera, string> = {
+    butter: "text-[#e0a15c]",
+    berry: "text-[#e27d8f]",
+};
 
-                {/* Product Grid — 2 columns, zig-zag offset */}
-                <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
-                    {products.map((product, i) => (
-                        <RevealOnScroll key={product.id} delay={i * 0.15}>
-                            <div className={i === 1 ? "md:mt-16" : ""}>
-                                <TiltCard product={product} onAddToCart={onAddToCart} />
-                            </div>
-                        </RevealOnScroll>
-                    ))}
+const bottoneDi: Record<Atmosfera, string> = {
+    butter: "bg-ambra",
+    berry: "bg-vino",
+};
+
+/*
+ * Le fragranze come una scena ferma: la sezione resta inchiodata allo schermo
+ * mentre scorri, la candela 3D gira su se stessa e a metà giro, quando l'etichetta
+ * è di spalle, diventa l'altra fragranza.
+ */
+export default function ProductShowcase({ onAtmosfera, onAddToCart }: ProductShowcaseProps) {
+    const sezione = useRef<HTMLElement>(null);
+    const [indice, setIndice] = useState(0);
+    const { scrollYProgress } = useScroll({ target: sezione, offset: ["start start", "end end"] });
+
+    useMotionValueEvent(scrollYProgress, "change", (p) => {
+        const i = p < 0.5 ? 0 : 1;
+        if (i !== indice) {
+            setIndice(i);
+            onAtmosfera(fragranze[i].atmosfera);
+        }
+    });
+
+    const f = fragranze[indice];
+
+    // le linguette portano al punto della sezione in cui la candela mostra quella fragranza
+    function vaiA(i: number) {
+        const el = sezione.current;
+        if (!el) return;
+        const top = el.getBoundingClientRect().top + window.scrollY;
+        const corsa = el.offsetHeight - window.innerHeight;
+        window.scrollTo({ top: top + corsa * (i === 0 ? 0.12 : 0.78), behavior: "smooth" });
+    }
+
+    return (
+        <section ref={sezione} id="fragranze" className="relative h-[300vh] bg-fuliggine text-carta">
+            <div className="sticky top-0 h-[100dvh] overflow-hidden">
+                {/* il colore della fragranza che si diffonde dietro la candela */}
+                {/* (due strati in dissolvenza: i gradienti non si possono animare direttamente) */}
+                {fragranze.map((x) => (
+                    <div
+                        key={x.id}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 transition-opacity duration-[1200ms]"
+                        style={{
+                            opacity: x.id === f.id ? 1 : 0,
+                            background: `radial-gradient(50% 55% at 74% 52%, ${x.atmosfera === "berry" ? "rgba(138,20,48,0.34)" : "rgba(156,79,22,0.32)"}, transparent 72%)`,
+                        }}
+                    />
+                ))}
+            <div className="relative mx-auto flex h-full max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
+                {/* telefono: la candela ha un posto fisso in alto, alto quanto il 36% dello schermo piccolo (svh),
+                    così non cambia misura col testo né con la barra di Safari */}
+                <div className="relative mb-3 h-[31svh] shrink-0 md:hidden [@media(max-height:620px)]:h-[26svh]">
+                    {/* centro un po' sopra la metà: la misura conta anche la scatola, più alta del vasetto */}
+                    <div data-ancora="fragranze" data-altezza="0.9" data-centro-y="0.4" className="absolute inset-0" />
                 </div>
+
+                <div className="md:col-span-6 lg:col-span-5">
+                    <h2 className="sr-only md:not-sr-only md:text-base md:text-carta/60">Due fragranze, non venti.</h2>
+                    <div role="tablist" aria-label="Fragranze" className="flex gap-2 md:mt-3">
+                        {fragranze.map((x, i) => (
+                            <button
+                                key={x.id}
+                                type="button"
+                                role="tab"
+                                aria-selected={i === indice}
+                                onClick={() => vaiA(i)}
+                                className={`min-h-11 rounded-full border px-5 text-base transition-colors duration-500 ${
+                                    i === indice ? "border-carta bg-carta text-fuliggine" : "border-carta/20 text-carta/70 hover:text-carta"
+                                }`}
+                            >
+                                {x.nome}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* il nome cambia lettera per lettera, come un tabellone */}
+                    <h3
+                        className={`mt-3 flex overflow-hidden font-serif text-[clamp(2.75rem,10vw,8rem)] leading-[0.95] transition-colors duration-700 md:mt-10 ${coloreDi[f.atmosfera]}`}
+                        aria-label={f.nome}
+                    >
+                        <AnimatePresence mode="popLayout" initial={false}>
+                            {f.nome.split("").map((c, i) => (
+                                <motion.span
+                                    key={f.id + i}
+                                    aria-hidden="true"
+                                    initial={{ y: "100%", opacity: 0 }}
+                                    animate={{ y: "0%", opacity: 1 }}
+                                    exit={{ y: "-100%", opacity: 0 }}
+                                    transition={{ duration: 0.45, delay: i * 0.04, ease: [0.22, 0.61, 0.36, 1] }}
+                                    className="inline-block"
+                                >
+                                    {c}
+                                </motion.span>
+                            ))}
+                        </AnimatePresence>
+                    </h3>
+
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={f.id}
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                            transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
+                        >
+                            <p className="mt-2 max-w-[44ch] text-sm leading-relaxed text-carta/85 md:mt-6 md:text-lg">{f.descrizione}</p>
+                            <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-carta/15 pt-2 md:mt-6 md:gap-x-6 md:gap-y-2 md:pt-5" aria-label="Note">
+                                {f.note.split(", ").map((nota, i) => (
+                                    <motion.li
+                                        key={nota}
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.15 + i * 0.08 }}
+                                        className="font-serif text-sm text-carta/75 first-letter:uppercase md:text-lg"
+                                    >
+                                        {nota}
+                                    </motion.li>
+                                ))}
+                            </ul>
+                            <div className="mt-4 flex flex-wrap items-center gap-6 md:mt-8">
+                                <button
+                                    type="button"
+                                    onClick={() => onAddToCart(f)}
+                                    className={`inline-flex min-h-12 items-center rounded-full px-7 text-base text-carta transition-opacity hover:opacity-90 ${bottoneDi[f.atmosfera]}`}
+                                >
+                                    Aggiungi {f.nome} al carrello
+                                </button>
+                                <p className="font-serif text-2xl md:text-3xl">{f.prezzo}&nbsp;&euro;</p>
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+
+                {/* qui si ferma la candela 3D mentre gira */}
+                <div className="relative hidden min-h-0 md:col-span-6 md:col-start-7 md:block md:h-full">
+                    <div data-ancora="fragranze" data-altezza="0.74" data-centro-y="0.52" className="absolute inset-0" />
+                </div>
+            </div>
             </div>
         </section>
     );
