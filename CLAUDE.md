@@ -7,7 +7,8 @@ Next.js 16 (Turbopack) + React 19 + Tailwind v4 + framer-motion + three.js (R3F 
 
 - **Online dal 23/09/2026** (commit `25f06ac` su `main`): la rinfrescata 3D con tappo, cofanetti composti dallo scroll,
   video verticale, laboratorio, footer nuovo. Next 16.2.7.
-- Il push su `main` fa partire il deploy Vercel (progetto `smoky-candle`): serve sempre il via di Ivan.
+- Il push su `main` fa partire il deploy Vercel (progetto `smoky-candle`): serve sempre il via di Ivan. Pushare **solo `main`**
+  (poi il branch): mandati insieme con lo stesso commit, Vercel costruisce solo l'anteprima. Controllare con `vercel ls`.
 - Pagamenti Stripe live dal 23/09/2026.
 
 ## Come si lavora
