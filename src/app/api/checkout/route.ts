@@ -85,8 +85,6 @@ export async function POST(req: Request) {
         p.set("branding_settings[icon][type]", "url");
         p.set("branding_settings[icon][url]", `${origine}/images/icona-cassa.png`);
     }
-    // sull'estratto conto, dopo il prefisso dell'account
-    p.set("payment_intent_data[statement_descriptor_suffix]", "SMOKY CANDLE");
 
     const risposta = await fetch("https://api.stripe.com/v1/checkout/sessions", {
         method: "POST",

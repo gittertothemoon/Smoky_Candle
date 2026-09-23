@@ -8,7 +8,7 @@ Next.js 16 (Turbopack) + React 19 + Tailwind v4 + framer-motion + three.js (R3F 
 - **Online dal 23/09/2026** (commit `25f06ac` su `main`): la rinfrescata 3D con tappo, cofanetti composti dallo scroll,
   video verticale, laboratorio, footer nuovo. Next 16.2.7.
 - Il push su `main` fa partire il deploy Vercel (progetto `smoky-candle`): serve sempre il via di Ivan.
-- Aperti: pagamento Stripe pronto in sandbox, online manca la chiave live (dopo il cambio nome dell'account).
+- Pagamenti Stripe live dal 23/09/2026.
 
 ## Come si lavora
 
@@ -64,4 +64,5 @@ Niente recensioni inventate, niente prezzi barrati mai praticati, niente newslet
 - Chiave in `STRIPE_SECRET_KEY` (`.env.local` in locale con la chiave della sandbox; in Vercel quella live).
 - Il carrello resta nel browser (`localStorage`, solo id e quantità) così chi annulla lo ritrova; `?ordine=ok|annullato` al ritorno.
 - Se il pagamento non parte, il carrello offre la mail precompilata come riserva.
-- L'account Stripe live si presentava come "Vespero": va rinominato "Smoky Candle" prima di mettere la chiave live.
+- L'account Stripe live (condiviso con Vespero, spento) ora si presenta come Smoky Candle: nome, sito, estratto conto
+  "SMOKY CANDLE", logo e colori, ricevute email in italiano. La sessione aggiunge comunque `branding_settings`.
