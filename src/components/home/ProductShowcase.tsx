@@ -115,40 +115,47 @@ export default function ProductShowcase({ onAtmosfera, onAddToCart }: ProductSho
                         </AnimatePresence>
                     </h3>
 
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={f.id}
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -12 }}
-                            transition={{ duration: 0.4, ease: [0.22, 0.61, 0.36, 1] }}
-                        >
-                            <p className="mt-2 max-w-[44ch] text-sm leading-relaxed text-carta/85 md:mt-6 md:text-lg">{f.descrizione}</p>
-                            <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-carta/15 pt-2 md:mt-6 md:gap-x-6 md:gap-y-2 md:pt-5" aria-label="Note">
-                                {f.note.split(", ").map((nota, i) => (
-                                    <motion.li
-                                        key={nota}
-                                        initial={{ opacity: 0, y: 8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.15 + i * 0.08 }}
-                                        className="font-serif text-sm text-carta/75 first-letter:uppercase md:text-lg"
-                                    >
-                                        {nota}
-                                    </motion.li>
-                                ))}
-                            </ul>
-                            <div className="mt-4 flex flex-wrap items-center gap-6 md:mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => onAddToCart(f)}
-                                    className={`inline-flex min-h-12 items-center rounded-full px-7 text-base text-carta transition-opacity hover:opacity-90 ${bottoneDi[f.atmosfera]}`}
+                    {/* le due schede stanno una sopra l'altra nello stesso spazio: si scambiano in dissolvenza
+                        senza che il blocco cambi altezza (smontare e rimontare lo accorciava e faceva sfarfallare) */}
+                    <div className="grid">
+                        {fragranze.map((x) => {
+                            const attiva = x.id === f.id;
+                            return (
+                                <div
+                                    key={x.id}
+                                    aria-hidden={!attiva}
+                                    inert={!attiva}
+                                    className="[grid-area:1/1] transition-[opacity,transform] ease-out"
+                                    style={{
+                                        opacity: attiva ? 1 : 0,
+                                        transform: attiva ? "none" : "translateY(10px)",
+                                        // esce in fretta, entra appena dopo: mai due testi sovrapposti a metà
+                                        transitionDuration: attiva ? "420ms" : "180ms",
+                                        transitionDelay: attiva ? "160ms" : "0ms",
+                                    }}
                                 >
-                                    Aggiungi {f.nome} al carrello
-                                </button>
-                                <p className="font-serif text-2xl md:text-3xl">{f.prezzo}&nbsp;&euro;</p>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
+                                    <p className="mt-2 max-w-[44ch] text-sm leading-relaxed text-carta/85 md:mt-6 md:text-lg">{x.descrizione}</p>
+                                    <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-carta/15 pt-2 md:mt-6 md:gap-x-6 md:gap-y-2 md:pt-5" aria-label="Note">
+                                        {x.note.split(", ").map((nota) => (
+                                            <li key={nota} className="font-serif text-sm text-carta/75 first-letter:uppercase md:text-lg">
+                                                {nota}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <div className="mt-4 flex flex-wrap items-center gap-6 md:mt-8">
+                                        <button
+                                            type="button"
+                                            onClick={() => onAddToCart(x)}
+                                            className={`inline-flex min-h-12 items-center rounded-full px-7 text-base text-carta transition-opacity hover:opacity-90 ${bottoneDi[x.atmosfera]}`}
+                                        >
+                                            Aggiungi {x.nome} al carrello
+                                        </button>
+                                        <p className="font-serif text-2xl md:text-3xl">{x.prezzo}&nbsp;&euro;</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {/* qui si ferma la candela 3D mentre gira */}

@@ -3,7 +3,7 @@
 // three.js vive di oggetti mutati a ogni frame dentro useFrame: è il modello di R3F, non un errore
 /* eslint-disable react-hooks/immutability */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -129,6 +129,13 @@ const N_FUMO = 220;
 const limita = (x: number, a = 0, b = 1) => Math.min(Math.max(x, a), b);
 
 /*
+ * La chiusura nei cofanetti va in due tempi, come si fa davvero: prima il vasetto si avvita il suo tappo
+ * (il primo 45% della corsa), poi il pack scende e lo chiude (il resto).
+ */
+const faseTappo = (r: number) => limita(r / 0.45);
+const faseScatola = (r: number) => limita((r - 0.45) / 0.55);
+
+/*
  * Il vetro rifrange una foto della scena scattata su un render target. Quello che sta FUORI
  * dal vetro (etichetta, scatola) non deve finirci, se no compare sul vetro come un fantasma:
  * quando si disegna su un render target, questi oggetti non disegnano niente.
@@ -194,50 +201,34 @@ const COLLARINO = 0.34;
 const BIANCO = "#f4f2ee";
 
 export type StatoScatola = "chiusa" | "apertura" | "via";
+export type StatoTappo = "su" | "svitando" | "via";
 
-/* Il logo del pack: l'etichetta di stampa senza il nome della fragranza, in grigio come sulla scatola vera */
-function useTexturaScatola() {
-    const [texture, setTexture] = useState<THREE.Texture | null>(null);
-    useEffect(() => {
-        let annullato = false;
-        const img = new Image();
-        img.src = "/images/etichetta-butter.webp";
-        img.onload = () => {
-            if (annullato) return;
-            const c = document.createElement("canvas");
-            c.width = 4096;
-            c.height = Math.round((4096 * (H_COPERCHIO - CARTONE)) / (2 * Math.PI * R_SCATOLA));
-            const ctx = c.getContext("2d")!;
-            ctx.fillStyle = BIANCO;
-            ctx.fillRect(0, 0, c.width, c.height);
-            // il logo largo il 26% della circonferenza, centrato davanti
-            const l = c.width * 0.26;
-            const h = (l * img.height) / img.width;
-            const x = c.width / 2 - l / 2;
-            const y = c.height * 0.58 - h / 2;
-            const tmp = document.createElement("canvas");
-            tmp.width = img.width;
-            tmp.height = img.height;
-            const t2 = tmp.getContext("2d")!;
-            t2.drawImage(img, 0, 0);
-            // grigio e un filo di contrasto fatti a mano: Safari ignora ctx.filter e lascerebbe il portone dorato
-            const px = t2.getImageData(0, 0, tmp.width, tmp.height);
-            const d = px.data;
-            for (let i = 0; i < d.length; i += 4) {
-                const l = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
-                d[i] = d[i + 1] = d[i + 2] = Math.min(255, Math.max(0, (l - 128) * 1.15 + 128));
-            }
-            t2.putImageData(px, 0, 0);
-            // via il nome della fragranza: sul pack c'è solo il marchio
-            t2.fillStyle = "#ffffff";
-            t2.fillRect(img.width * 0.36, img.height * 0.79, img.width * 0.28, img.height * 0.12);
-            ctx.globalCompositeOperation = "multiply";
-            ctx.drawImage(tmp, x, y, l, h);
-            const t = new THREE.CanvasTexture(c);
+/*
+ * Il logo del pack: l'etichetta di stampa senza il nome della fragranza, in grigio come sulla scatola vera.
+ * È un'immagine già pronta (public/images/scatola-coperchio.webp): costruirla nel browser voleva dire
+ * una tela da 4096 px ripassata pixel per pixel, e sull'iPhone il pack arrivava dopo la candela.
+ * Una sola texture per tutta la pagina: la usano la scatola dell'apertura e quella dei cofanetti.
+ */
+let texturaScatola: THREE.Texture | null = null;
+let caricamentoScatola: Promise<THREE.Texture> | null = null;
+function caricaTexturaScatola() {
+    caricamentoScatola ??= new Promise((ok) => {
+        new THREE.TextureLoader().load("/images/scatola-coperchio.webp", (t) => {
             t.colorSpace = THREE.SRGBColorSpace;
             t.anisotropy = 8;
-            setTexture(t);
-        };
+            texturaScatola = t;
+            ok(t);
+        });
+    });
+    return caricamentoScatola;
+}
+function useTexturaScatola() {
+    const [texture, setTexture] = useState<THREE.Texture | null>(texturaScatola);
+    useEffect(() => {
+        let annullato = false;
+        caricaTexturaScatola().then((t) => {
+            if (!annullato) setTexture(t);
+        });
         return () => {
             annullato = true;
         };
@@ -259,16 +250,19 @@ function sopraLaCandela(x: number, y: number, s: Schermo, larghezza = 0.36) {
     return Math.abs(x - s.cx) < s.h * larghezza && Math.abs(y - s.cy) < s.h * 0.55;
 }
 
+export type Suono = "stappo" | "scatto" | "tin";
+
 interface ScatolaProps {
     stato: StatoScatola;
     onApri: () => void;
     onAperta: () => void;
+    onSuono: (s: Suono) => void;
     schermo: React.RefObject<Schermo>;
     /** Se c'è, la scatola si richiude seguendo lo scroll (0 aperta, 1 chiusa). */
     chiusura?: React.RefObject<number>;
 }
 
-function Scatola({ stato, onApri, onAperta, schermo, chiusura }: ScatolaProps) {
+function Scatola({ stato, onApri, onAperta, onSuono, schermo, chiusura }: ScatolaProps) {
     const textura = useTexturaScatola();
     const coperchio = useRef<THREE.Group>(null);
     const base = useRef<THREE.Group>(null);
@@ -276,10 +270,11 @@ function Scatola({ stato, onApri, onAperta, schermo, chiusura }: ScatolaProps) {
     const tiro = useRef({ attivo: false, y0: 0, valore: 0, rilascio: 0 });
     const apertura = useRef<number | null>(null);
     const chiusa = useRef(false);
-    const cb = useRef({ stato, onApri, onAperta });
+    const cb = useRef({ stato, onApri, onAperta, onSuono });
     useEffect(() => {
-        cb.current = { stato, onApri, onAperta };
-    }, [stato, onApri, onAperta]);
+        cb.current = { stato, onApri, onAperta, onSuono };
+    }, [stato, onApri, onAperta, onSuono]);
+    const stappata = useRef(false);
 
     // col mouse si afferra il coperchio e si tira su; un tocco o un clic la aprono
     useEffect(() => {
@@ -328,9 +323,9 @@ function Scatola({ stato, onApri, onAperta, schermo, chiusura }: ScatolaProps) {
         if (chiusura) {
             // richiusa dallo scroll: la base c'è già, piena, sotto il vasetto (la candela ci è appoggiata);
             // il coperchio scende dall'alto, pieno, e la chiude. Niente pezzi semitrasparenti.
-            const r = chiusura.current;
+            const r = faseScatola(chiusura.current);
             const k = 1 - r;
-            if (tutto.current) tutto.current.visible = r > 0.01;
+            if (tutto.current) tutto.current.visible = chiusura.current > 0.01;
             if (coperchio.current) {
                 const y = k * k * 3.4;
                 coperchio.current.position.y = y;
@@ -341,7 +336,7 @@ function Scatola({ stato, onApri, onAperta, schermo, chiusura }: ScatolaProps) {
             }
             if (base.current) {
                 // compare in un attimo crescendo appena, ferma sotto il vasetto: non sale sul testo
-                const cresce = limita(r / 0.12);
+                const cresce = limita(chiusura.current / 0.12);
                 base.current.position.y = 0;
                 base.current.scale.set(0.9 + cresce * 0.1, cresce, 0.9 + cresce * 0.1);
             }
@@ -371,21 +366,28 @@ function Scatola({ stato, onApri, onAperta, schermo, chiusura }: ScatolaProps) {
 
         if (apertura.current === null) apertura.current = t;
         const x = t - apertura.current;
-        // il coperchio salta via in alto ruotando; la base scende; poi svaniscono
+        // il cartone fa resistenza: il coperchio sale di un dito, si stacca col "pop" (il suono parte da qui,
+        // nel fotogramma in cui si stacca), poi vola via in alto ruotando; la base scende; poi svaniscono
         const esce = (k: number) => 1 - Math.pow(1 - Math.min(Math.max(k, 0), 1), 3);
+        const STRAPPO = 0.3;
         const partenza = c.position.y;
-        c.position.y = Math.max(partenza, esce(x / 1.1) * 3.4);
+        const y = x < STRAPPO ? 0.08 * morbido(x / STRAPPO) : 0.08 + esce((x - STRAPPO) / 1.05) * 3.3;
+        c.position.y = Math.max(partenza, y);
+        if (x >= STRAPPO && !stappata.current) {
+            stappata.current = true;
+            cb.current.onSuono("stappo");
+        }
         // s'inclina solo quando ha lasciato il vasetto, se no gli passerebbe attraverso
         const libero = limita((c.position.y - 1.6) / 1.6);
         c.rotation.x = -libero * 0.5;
         c.rotation.z = libero * 0.18;
-        b.position.y = -esce((x - 0.25) / 1.2) * 2.2;
-        const svanisce = 1 - Math.min(Math.max((x - 0.5) / 0.8, 0), 1);
+        b.position.y = -esce((x - 0.55) / 1.2) * 2.2;
+        const svanisce = 1 - Math.min(Math.max((x - 0.85) / 0.75, 0), 1);
         for (const m of materiali.current) {
             m.opacity = svanisce;
             m.transparent = svanisce < 0.999;
         }
-        if (x > 1.4) {
+        if (x > 1.65) {
             chiusa.current = true;
             cb.current.onAperta();
         }
@@ -453,6 +455,189 @@ function Scatola({ stato, onApri, onAperta, schermo, chiusura }: ScatolaProps) {
     );
 }
 
+/* ---------- il tappo a vite: nero su Berry, oro su Butter, identico per il resto ---------- */
+
+// dalla foto del tappo vero: disco piatto, fascia zigrinata, bordino arrotolato in fondo; copre la filettatura
+const R_TAPPO = 0.757;
+const H_TAPPO = 0.3;
+// il disco interno del tappo (spesso 0,02) appoggia sul labbro del vetro: più in basso il labbro lo buca e fa un cerchio scuro
+const SEDE_TAPPO = H_VETRO + 0.022;
+
+interface TappoProps {
+    atmosfera: Atmosfera;
+    chiusura: React.RefObject<number>;
+    /** nell'apertura: il tappo c'è finché non lo sviti */
+    stato: StatoTappo;
+    /** il pack è ancora chiuso o si sta aprendo: il tappo non si tocca */
+    inScatola: boolean;
+    schermo: React.RefObject<Schermo>;
+    onStappa: () => void;
+    onTolto: () => void;
+    onSuono: (s: Suono) => void;
+}
+
+function Tappo({ atmosfera, chiusura, stato, inScatola, schermo, onStappa, onTolto, onSuono }: TappoProps) {
+    const g = useRef<THREE.Group>(null);
+    const cb = useRef({ stato, inScatola, onStappa, onTolto, onSuono });
+    useEffect(() => {
+        cb.current = { stato, inScatola, onStappa, onTolto, onSuono };
+    }, [stato, inScatola, onStappa, onTolto, onSuono]);
+    const inizio = useRef<number | null>(null);
+    // i suoni seguono il tappo: uno scatto a ogni quarto di giro, il "tin" quando si stacca
+    const giro = useRef({ quarti: 0, staccato: false });
+
+    // un tocco o un clic sulla candela (senza trascinare) svita il tappo
+    useEffect(() => {
+        const giu = { x: 0, y: 0, t: 0, sopra: false };
+        const premi = (e: PointerEvent) => {
+            giu.sopra = sopraLaCandela(e.clientX, e.clientY, schermo.current, 0.4);
+            giu.x = e.clientX;
+            giu.y = e.clientY;
+            giu.t = performance.now();
+        };
+        const lascia = (e: PointerEvent) => {
+            const c = cb.current;
+            if (!giu.sopra || c.stato !== "su" || c.inScatola) return;
+            if (performance.now() - giu.t > 350 || Math.hypot(e.clientX - giu.x, e.clientY - giu.y) > 10) return;
+            c.onStappa();
+        };
+        window.addEventListener("pointerdown", premi);
+        window.addEventListener("pointerup", lascia);
+        return () => {
+            window.removeEventListener("pointerdown", premi);
+            window.removeEventListener("pointerup", lascia);
+        };
+    }, [schermo]);
+
+    const corpo = useMemo(() => {
+        const p = (r: number, y: number) => new THREE.Vector2(r, y);
+        const b = -H_TAPPO;
+        return new THREE.LatheGeometry(
+            [
+                p(0, 0),
+                // il bordo del disco è una curva morbida, non uno smusso: un gradino stretto rifletteva il buio e faceva una riga nera
+                ...Array.from({ length: 7 }, (_, i) => {
+                    const a = (i / 6) * (Math.PI / 2);
+                    return p(R_TAPPO - 0.03 + Math.sin(a) * 0.03, -0.03 + Math.cos(a) * 0.03);
+                }),
+                p(R_TAPPO, -0.045),
+                p(R_TAPPO, b + 0.06),
+                // il bordino arrotolato, appena più largo
+                p(R_TAPPO + 0.014, b + 0.045),
+                p(R_TAPPO + 0.016, b + 0.02),
+                p(R_TAPPO + 0.006, b),
+                p(0.742, b),
+                p(0.742, -0.02),
+                p(0, -0.02),
+            ],
+            160
+        );
+    }, []);
+
+    // la zigrinatura: una fascia di righe verticali fitte, fatta alternando il raggio
+    const zigrino = useMemo(() => {
+        const geo = new THREE.CylinderGeometry(R_TAPPO, R_TAPPO, H_TAPPO - 0.13, 360, 1, true);
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const z = pos.getZ(i);
+            const a = Math.atan2(z, x);
+            const k = 1 + (Math.round((a / (Math.PI * 2)) * 360) % 2 === 0 ? 0.008 : 0);
+            pos.setXYZ(i, x * k, pos.getY(i), z * k);
+        }
+        geo.computeVertexNormals();
+        geo.translate(0, -0.045 - (H_TAPPO - 0.13) / 2, 0);
+        return geo;
+    }, []);
+
+    const materiali = useMemo(
+        () => ({
+            // nero satinato: al buio si legge dai riflessi, non dal colore
+            berry: new THREE.MeshStandardMaterial({ color: "#1b1a1a", metalness: 0.55, roughness: 0.38, envMapIntensity: 1.3 }),
+            // l'oro puro al buio riflette solo il buio: il disco piatto in cima veniva un cerchio nero.
+            // Metà metallo e una luce propria calda: dorato ovunque, coi riflessi che corrono sulla zigrinatura
+            butter: new THREE.MeshStandardMaterial({
+                color: "#d6ae5c",
+                metalness: 0.45,
+                roughness: 0.36,
+                envMapIntensity: 1.6,
+                emissive: "#7a5620",
+                emissiveIntensity: 0.55,
+            }),
+        }),
+        []
+    );
+    useEffect(() => () => Object.values(materiali).forEach((m) => m.dispose()), [materiali]);
+
+    useFrame(({ clock }) => {
+        const t = g.current;
+        if (!t) return;
+        const c = cb.current;
+        const m = materiali[atmosfera];
+        m.opacity = 1;
+        m.transparent = false;
+        t.rotation.x = 0;
+        t.rotation.z = 0;
+
+        // scorrendo veloce il pack dei cofanetti arriva prima che il tappo abbia finito: si chiude di colpo
+        if (c.stato === "svitando" && chiusura.current > 0.001) {
+            inizio.current = null;
+            c.onTolto();
+        }
+        if (c.stato === "svitando" && chiusura.current < 0.001) {
+            // due giri al contrario salendo del passo, poi si stacca e vola via come il coperchio del pack
+            if (inizio.current === null) {
+                inizio.current = clock.elapsedTime;
+                giro.current = { quarti: 0, staccato: false };
+            }
+            const x = clock.elapsedTime - inizio.current;
+            // parte piano, gira, rallenta: due giri al contrario in 1,1 secondi
+            const s = morbido(x / 1.1);
+            const l = limita((x - 1.1) / 0.9);
+            const vola = 1 - Math.pow(1 - l, 3);
+            const quarti = Math.floor(s * 8);
+            if (quarti > giro.current.quarti && quarti < 8) {
+                giro.current.quarti = quarti;
+                c.onSuono("scatto");
+            }
+            if (l > 0 && !giro.current.staccato) {
+                giro.current.staccato = true;
+                c.onSuono("tin");
+            }
+            t.visible = true;
+            t.position.y = SEDE_TAPPO + 0.05 * s + vola * 1.9;
+            t.rotation.y = s * Math.PI * 4 + l * 0.6;
+            t.rotation.x = -vola * 0.45;
+            t.rotation.z = vola * 0.2;
+            const svanisce = 1 - limita((x - 1.5) / 0.5);
+            m.opacity = svanisce;
+            m.transparent = svanisce < 0.999;
+            if (x > 2.05) {
+                inizio.current = null;
+                c.onTolto();
+            }
+            return;
+        }
+        // tappo mai svitato: resta avvitato, anche mentre il pack lo richiude
+        const k = c.stato === "via" ? faseTappo(chiusura.current) : 1;
+        t.visible = k > 0.001;
+        // scende dritto fino a poggiare sulla filettatura, poi tre giri in senso orario e cala del passo
+        const scende = limita(k / 0.55);
+        const avvita = limita((k - 0.55) / 0.45);
+        const giu = 1 - scende;
+        t.position.y = SEDE_TAPPO + 0.05 * (1 - avvita) + giu * giu * 1.6;
+        t.rotation.y = -avvita * Math.PI * 6 - giu * 0.8;
+    });
+
+    const m = materiali[atmosfera];
+    return (
+        <group ref={g} visible={false}>
+            <mesh ref={fuoriDalVetro} geometry={corpo} material={m} renderOrder={7} />
+            <mesh ref={fuoriDalVetro} geometry={zigrino} material={m} renderOrder={7} />
+        </group>
+    );
+}
+
 /* ---------- la scena ---------- */
 
 interface ScenaProps {
@@ -461,6 +646,12 @@ interface ScenaProps {
     scatola: StatoScatola;
     onApri: () => void;
     onAperta: () => void;
+    tappo: StatoTappo;
+    onStappa: () => void;
+    onTolto: () => void;
+    onSuono: (s: Suono) => void;
+    /** tutto caricato (etichetta e, se serve, il pack): la tela può comparire */
+    onPronta?: () => void;
     acceso: boolean;
     atmosfera: Atmosfera;
     rinnovo: number;
@@ -474,9 +665,15 @@ interface ScenaProps {
 // sul telefono si risparmia: meno passaggi del vetro, meno pixel
 const leggero = typeof window !== "undefined" && window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
 
-function Scena({ schermo, chiusura, scatola, onApri, onAperta, acceso, atmosfera, rinnovo, onSoffio, onSoffocata, onOre, onFinita }: ScenaProps) {
+function Scena({ schermo, chiusura, scatola, onApri, onAperta, tappo, onStappa, onTolto, onSuono, onPronta, acceso, atmosfera, rinnovo, onSoffio, onSoffocata, onOre, onFinita }: ScenaProps) {
     const { camera, size } = useThree();
     const etichetta = useEtichette()[atmosfera];
+    // la candela non si mostra a metà: vasetto, etichetta e pack arrivano insieme
+    const texturaPack = useTexturaScatola();
+    const pronta = !!etichetta && (scatola === "via" || !!texturaPack);
+    useEffect(() => {
+        if (pronta) onPronta?.();
+    }, [pronta, onPronta]);
     const hEtichetta = (R_ETICHETTA * ARCO_ETICHETTA) / ETICHETTE[atmosfera].aspetto;
 
     const cera = useRef<THREE.Mesh>(null);
@@ -600,12 +797,13 @@ function Scena({ schermo, chiusura, scatola, onApri, onAperta, acceso, atmosfera
         const dt = Math.min(delta, 0.05);
         const t = state.clock.elapsedTime;
 
-        // il coperchio arriva al bordo del vasetto (chiusura ≈ 0.35): la fiamma si spegne davvero
-        if (cb.acceso && chiusura.current > 0.35) cb.onSoffocata();
+        // il tappo arriva a un dito dalla fiamma: si spegne davvero
+        const tappo = faseTappo(chiusura.current);
+        if (cb.acceso && tappo > 0.42) cb.onSoffocata();
 
         // accensione e spegnimento
-        // niente fumo se l'ha spenta il coperchio: uscirebbe attraverso il cartone chiuso
-        if (s.eraAcceso && !cb.acceso && chiusura.current < 0.3) s.fumoFino = t + 3;
+        // niente fumo se l'ha spenta il tappo: uscirebbe attraverso il metallo
+        if (s.eraAcceso && !cb.acceso && tappo < 0.2) s.fumoFino = t + 3;
         s.eraAcceso = cb.acceso;
         const obiettivo = cb.acceso ? 1 : 0;
         s.luce += (obiettivo - s.luce) * (cb.acceso ? 1.8 : 5) * dt;
@@ -664,8 +862,8 @@ function Scena({ schermo, chiusura, scatola, onApri, onAperta, acceso, atmosfera
         s.vento += (spinta + tremolio - s.vento) * Math.min(dt * 5, 1);
 
         const tremola = 0.88 + Math.sin(t * 13.1) * 0.05 + Math.sin(t * 7.3) * 0.05 + Math.sin(t * 23.7) * 0.02;
-        // dentro la scatola che si richiude la fiamma non si vede
-        const coperta = 1 - limita((chiusura.current - 0.2) / 0.15) * 0.6;
+        // sotto il tappo che scende la fiamma si abbassa
+        const coperta = 1 - limita((tappo - 0.25) / 0.17) * 0.6;
         const luceVista = s.luce * coperta;
         tinta.set(TINTE[cb.atmosfera].luce);
         const uf = matFiamma.current?.uniforms;
@@ -737,11 +935,11 @@ function Scena({ schermo, chiusura, scatola, onApri, onAperta, acceso, atmosfera
                 <Lightformer form="ring" intensity={0.8} position={[0, 5, 0]} scale={2} rotation-x={Math.PI / 2} />
             </Environment>
 
-            <group position={[0, -1.25, 0]}>
+            <group position={[0, -1.25, 0]} visible={pronta}>
                 {scatola !== "via" ? (
-                    <Scatola stato={scatola} onApri={onApri} onAperta={onAperta} schermo={schermo} />
+                    <Scatola stato={scatola} onApri={onApri} onAperta={onAperta} onSuono={onSuono} schermo={schermo} />
                 ) : (
-                    <Scatola stato="via" onApri={onApri} onAperta={onAperta} schermo={schermo} chiusura={chiusura} />
+                    <Scatola stato="via" onApri={onApri} onAperta={onAperta} onSuono={onSuono} schermo={schermo} chiusura={chiusura} />
                 )}
 
                 {/* il vetro ambrato */}
@@ -834,6 +1032,17 @@ function Scena({ schermo, chiusura, scatola, onApri, onAperta, acceso, atmosfera
                         />
                     </mesh>
                 )}
+
+                <Tappo
+                    atmosfera={atmosfera}
+                    chiusura={chiusura}
+                    stato={tappo}
+                    inScatola={scatola !== "via"}
+                    schermo={schermo}
+                    onStappa={onStappa}
+                    onTolto={onTolto}
+                    onSuono={onSuono}
+                />
 
                 {/* la fiamma e il suo alone */}
                 <group ref={fiamma} position={[0, FONDO + CERA_MAX + 0.09, 0]}>
@@ -1089,7 +1298,7 @@ function Viaggio({ schermo, aggancio, chiusura, girabile, libera, children }: Vi
             cy = ag.cy;
             h = ag.h;
             giroScroll = ag.tipo === "fragranze" ? p * Math.PI * 2 : 0;
-            chiusura.current = ag.tipo === "cofanetti" ? limita(p / 0.6) : 0;
+            chiusura.current = ag.tipo === "cofanetti" ? limita(p / 0.75) : 0;
             const tela = state.gl.domElement.getBoundingClientRect();
             schermo.current.ox = tela.left;
             schermo.current.oy = tela.top;
@@ -1118,9 +1327,9 @@ function Viaggio({ schermo, aggancio, chiusura, girabile, libera, children }: Vi
         h = b ? mix(a.h, b.h) : a.h;
         const valore = (x: Ancora | null, tipo: string, fn: (p: number) => number) => (x && x.tipo === tipo ? fn(x.p) : 0);
         giroScroll = mix(valore(a, "fragranze", (p) => p * Math.PI * 2), valore(b, "fragranze", (p) => p * Math.PI * 2));
-        chiusura.current = mix(valore(a, "cofanetti", (p) => limita(p / 0.6)), valore(b, "cofanetti", (p) => limita(p / 0.6)));
+        chiusura.current = mix(valore(a, "cofanetti", (p) => limita(p / 0.75)), valore(b, "cofanetti", (p) => limita(p / 0.75)));
         if (!b) {
-            chiusura.current = valore(a, "cofanetti", (p) => limita(p / 0.6));
+            chiusura.current = valore(a, "cofanetti", (p) => limita(p / 0.75));
         }
         }
 
@@ -1156,6 +1365,10 @@ export default function Candela3D({ girabile, ...scena }: Candela3DProps) {
     const schermo = useRef<Schermo>({ cx: -9999, cy: -9999, h: 0, ox: 0, oy: 0 });
     const aggancio = useRef<Aggancio>({ el: null, tipo: "", cx: 0, cy: 0, h: 0 });
     const fotografa = useRef<(() => HTMLCanvasElement) | null>(null);
+    // la tela entra in dissolvenza solo quando vasetto, etichetta e pack sono tutti pronti
+    const [pronta, setPronta] = useState(false);
+    const segnaPronta = useCallback(() => setPronta(true), []);
+    const entrata = { opacity: pronta ? 1 : 0, transition: "opacity 700ms ease-out" };
     // sul telefono la tela vive in un contenitore che passa da un'ancora all'altra (la tela non si rifà)
     const [host] = useState(() => {
         if (!attaccata) return null;
@@ -1221,16 +1434,16 @@ export default function Candela3D({ girabile, ...scena }: Candela3DProps) {
             {host && <Fotografo rif={fotografa} />}
             <Viaggio schermo={schermo} aggancio={host ? aggancio : null} chiusura={chiusura} girabile={girabile} libera={scena.scatola === "via"}>
                 <Oscilla>
-                    <Scena {...scena} schermo={schermo} chiusura={chiusura} />
+                    <Scena {...scena} schermo={schermo} chiusura={chiusura} onPronta={segnaPronta} />
                 </Oscilla>
             </Viaggio>
         </Canvas>
     );
-    if (host) return createPortal(<div data-candela className="h-full w-full">{tela}</div>, host);
+    if (host) return createPortal(<div data-candela className="h-full w-full" style={entrata}>{tela}</div>, host);
     return (
         // alta quanto lo schermo con la barra di Safari nascosta (lvh): quando la barra va e viene
         // la tela non si ridimensiona e la candela non salta
-        <div data-candela className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[100lvh]" aria-hidden="true">
+        <div data-candela className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[100lvh]" style={entrata} aria-hidden="true">
             {tela}
         </div>
     );

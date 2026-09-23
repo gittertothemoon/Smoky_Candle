@@ -33,7 +33,10 @@ Next.js 16 (Turbopack) + React 19 + Tailwind v4 + framer-motion + three.js (R3F 
 - Il vetro con rifrazione fotografa la scena: etichetta e scatola vanno escluse (`fuoriDalVetro`), se no fanno il fantasma sul vetro.
 - Su iPhone: `formatDetection` spento (Safari trasforma numeri e email in link e rompe l'idratazione).
 - Sul telefono il comando principale deve stare nel primo schermo (misurare su 390x664 e 375x560).
-- Mai `ctx.filter` sulle tele 2D: Safari lo ignora (il portone del pack veniva dorato). Filtri a mano con `getImageData`.
+- Il logo del pack è un'immagine già pronta (`public/images/scatola-coperchio.webp`, grigia, senza il nome): costruirla nel
+  browser era lenta su iPhone e il pack arrivava dopo la candela. Se cambia l'etichetta va rigenerata (appoggiata sul bianco:
+  gli angoli trasparenti diventano neri). La tela 3D entra in dissolvenza solo quando vasetto, etichetta e pack sono pronti.
+- I suoni di pack e tappo partono dall'animazione (fotogramma del distacco, ogni quarto di giro), mai da un timer a parte.
 - Sul telefono la tela 3D non è fissa: vive dentro l'ancora e scorre con la pagina. Una tela fissa che insegue lo scroll
   arriva un fotogramma dopo e su iPhone sobbalza. La tela ha la stessa misura in ogni ancora (ridimensionarla la svuota)
   e si cambia ancora fuori schermo, lasciando una foto ferma in quella che esce.

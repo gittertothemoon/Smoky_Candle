@@ -22,7 +22,9 @@ const scelte: { id: Atmosfera; nome: string; colore: string }[] = [
 
 export default function HeroSection({ atmosfera, onAtmosfera, candela }: HeroProps) {
     const ridotto = useMovimentoRidotto();
-    const { acceso, spentaConSoffio, ore, finita, girabile, scatola, apri, muto, setMuto, alterna, nuovaCandela } = candela;
+    const { acceso, spentaConSoffio, ore, finita, girabile, scatola, apri, tappo, stappa, muto, setMuto, alterna, nuovaCandela } = candela;
+    // con "Riduci movimento" pack e tappo non ci sono: la candela è già pronta
+    const tappata = tappo !== "via" && !ridotto;
 
     // l'animazione d'ingresso ha sempre un traguardo: se "Riduci movimento" arriva dopo l'idratazione,
     // gli elementi non devono restare fermi a trasparenza zero (era il vuoto visto su iPhone)
@@ -71,6 +73,15 @@ export default function HeroSection({ atmosfera, onAtmosfera, candela }: HeroPro
                             className="inline-flex min-h-12 items-center rounded-full bg-carta px-7 text-base text-fuliggine transition-colors hover:bg-white"
                         >
                             Apri la scatola
+                        </button>
+                        ) : tappata ? (
+                        <button
+                            type="button"
+                            onClick={stappa}
+                            disabled={tappo === "svitando"}
+                            className="inline-flex min-h-12 items-center rounded-full bg-carta px-7 text-base text-fuliggine transition-colors hover:bg-white disabled:opacity-60"
+                        >
+                            Svita il tappo
                         </button>
                         ) : finita ? (
                         <button
@@ -124,6 +135,10 @@ export default function HeroSection({ atmosfera, onAtmosfera, candela }: HeroPro
                             {scatola === "chiusa" && !ridotto ? (
                                 <motion.p key="scatola" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 1.8 } }} exit={{ opacity: 0 }}>
                                     {girabile ? "Afferra il coperchio e tiralo su, oppure cliccaci sopra." : "Tocca la scatola per aprirla."}
+                                </motion.p>
+                            ) : tappata ? (
+                                <motion.p key="tappo" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.6 } }} exit={{ opacity: 0 }}>
+                                    {girabile ? "Clicca sul tappo per svitarlo." : "Tocca il tappo per svitarlo."}
                                 </motion.p>
                             ) : finita ? (
                                 <motion.p key="finita" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

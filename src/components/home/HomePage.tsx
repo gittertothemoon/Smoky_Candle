@@ -34,6 +34,22 @@ export default function HomePage() {
         const t = setTimeout(avvia, 600);
         return () => clearTimeout(t);
     }, []);
+    // quando fragranze o cofanetti arrivano a metà schermo la candela si scopre da sola (anche dopo un salto con un link)
+    const { scopri } = candela;
+    useEffect(() => {
+        if (ridotto) return;
+        const io = new IntersectionObserver(
+            (voci) => {
+                if (voci.some((v) => v.isIntersecting)) scopri();
+            },
+            { rootMargin: "0px 0px -50% 0px" }
+        );
+        ["fragranze", "cofanetti"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) io.observe(el);
+        });
+        return () => io.disconnect();
+    }, [ridotto, scopri]);
     const [cartOpen, setCartOpen] = useState(false);
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
@@ -78,6 +94,10 @@ export default function HomePage() {
                 scatola={ridotto ? "via" : candela.scatola}
                 onApri={candela.apri}
                 onAperta={candela.aperta}
+                tappo={ridotto ? "via" : candela.tappo}
+                onStappa={candela.stappa}
+                onTolto={candela.tolto}
+                onSuono={candela.suona}
                 acceso={candela.acceso}
                 atmosfera={atmosfera}
                 rinnovo={candela.rinnovo}

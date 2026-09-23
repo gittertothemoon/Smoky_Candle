@@ -120,6 +120,40 @@ export class Crepitio {
     }
 
     /** Il tubo di cartone che si stappa: un "pop" d'aria risucchiata, sordo, con un soffio che esce. */
+    /* uno scatto del tappo di metallo sulla filettatura (uno per ogni quarto di giro) */
+    scatto() {
+        if (!this.ctx) return;
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+        const scatto = ctx.createBufferSource();
+        scatto.buffer = this.rumore(0.03, 9);
+        const bp = ctx.createBiquadFilter();
+        bp.type = "bandpass";
+        bp.frequency.value = 3000 + Math.random() * 900;
+        bp.Q.value = 4;
+        const g = ctx.createGain();
+        g.gain.value = 0.16 + Math.random() * 0.06;
+        scatto.connect(bp).connect(g).connect(this.uscita!);
+        scatto.start(t);
+    }
+
+    /* il "tin" del tappo che si stacca dal vetro */
+    tin() {
+        if (!this.ctx) return;
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+        const tin = ctx.createOscillator();
+        tin.type = "sine";
+        tin.frequency.setValueAtTime(2300, t);
+        const gt = ctx.createGain();
+        gt.gain.setValueAtTime(0, t);
+        gt.gain.linearRampToValueAtTime(0.09, t + 0.004);
+        gt.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        tin.connect(gt).connect(this.uscita!);
+        tin.start(t);
+        tin.stop(t + 0.4);
+    }
+
     stappo() {
         if (!this.ctx) return;
         const ctx = this.ctx;
