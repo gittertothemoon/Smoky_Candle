@@ -5,8 +5,10 @@ Next.js 16 (Turbopack) + React 19 + Tailwind v4 + framer-motion + three.js (R3F 
 
 ## Stato attuale — 23/09/2026
 
-- **Branch `rinfrescata-2026-09`**: la rinfrescata completa, **NON pubblicata**. `main` e il sito online sono ancora la versione di maggio.
-- Prima di pubblicare serve il via di Ivan. Il merge su `main` fa partire il deploy Vercel.
+- **Online dal 23/09/2026** (commit `25f06ac` su `main`): la rinfrescata 3D con tappo, cofanetti composti dallo scroll,
+  video verticale, laboratorio, footer nuovo. Next 16.2.7.
+- Il push su `main` fa partire il deploy Vercel (progetto `smoky-candle`): serve sempre il via di Ivan.
+- Aperti: Lighthouse mobile da rimisurare; Stripe al posto dell'ordine via mail (serve la P.IVA).
 
 ## Come si lavora
 
