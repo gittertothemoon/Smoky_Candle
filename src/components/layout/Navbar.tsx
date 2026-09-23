@@ -36,7 +36,8 @@ export default function Navbar({ cartCount, onCartOpen }: NavbarProps) {
                 alBuio ? "border-b border-transparent" : "border-b border-carta/10 bg-fuliggine/85 backdrop-blur-lg"
             }`}
         >
-            <nav className="mx-auto flex h-16 max-w-[1320px] items-center justify-between px-4 sm:px-6 md:h-20 lg:px-10">
+            {/* la barra dà aria al logo: 10 px sopra e sotto sul telefono, 18 sullo schermo grande */}
+            <nav className="mx-auto flex h-16 max-w-[1320px] items-center justify-between px-4 sm:px-6 md:h-24 lg:px-10">
                 <a href="#" aria-label="Smoky Candle, torna all'inizio" className="flex h-full items-center">
                     {/* il logo ritagliato sul disegno: il file quadrato aveva un terzo di margine vuoto e lo rimpiccioliva */}
                     <Image
@@ -45,7 +46,7 @@ export default function Navbar({ cartCount, onCartOpen }: NavbarProps) {
                         width={485}
                         height={330}
                         priority
-                        className="h-12 w-auto [filter:brightness(0)_invert(1)] md:h-[3.75rem]"
+                        className="h-11 w-auto [filter:brightness(0)_invert(1)] md:h-[3.75rem]"
                     />
                 </a>
 

@@ -31,7 +31,7 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
         {/* scena ferma: mentre scorri la candela torna nella sua scatola, pronta da regalare */}
         <section id="cofanetti" className="relative h-[220vh] bg-fuliggine text-carta">
             {/* sul telefono il blocco è alto quanto il suo contenuto: niente mezzo schermo vuoto sotto il testo quando finisce */}
-            <div className="sticky top-0 mx-auto flex max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:h-[100dvh] md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
+            <div className="sticky top-0 mx-auto flex max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:h-[100dvh] md:grid-cols-12 md:items-center md:gap-6 md:pt-24 lg:px-10">
                 {/* telefono: la scatola sta sopra il testo, in un posto fisso: il coperchio scende da dove non c'è niente da leggere */}
                 {/* stessa misura di candela di prima (0,74 x 38 = 0,64 x 44), ma più in alto: meno vuoto quando la sezione arriva */}
                 <div className="relative h-[38svh] shrink-0 md:hidden">
@@ -57,7 +57,7 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
 
         {/* la scena 3D continua: il pack chiuso se ne va e la candela diventa il cofanetto che scegli */}
         <section ref={scena} id="scegli-cofanetto" aria-label="I cofanetti" className="relative h-[420vh] bg-fuliggine text-carta">
-            <div className="sticky top-0 mx-auto flex h-[100dvh] max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
+            <div className="sticky top-0 mx-auto flex h-[100dvh] max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-24 lg:px-10">
                 {/* sul telefono scena e scheda devono stare insieme nello schermo, anche basso: la scheda del Discovery è la più lunga */}
                 <div className="relative h-[35svh] shrink-0 md:order-2 md:col-span-7 md:h-[76vh] [@media(max-height:620px)]:h-[31svh]">
                     {/* sullo schermo grande la colonna è alta: il cofanetto con la scatola ci deve stare intero */}

@@ -66,7 +66,7 @@ export default function ProductShowcase({ onAtmosfera, onAddToCart }: ProductSho
                         }}
                     />
                 ))}
-            <div className="relative mx-auto flex max-w-[1320px] md:h-full flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
+            <div className="relative mx-auto flex max-w-[1320px] md:h-full flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-24 lg:px-10">
                 {/* telefono: la candela ha un posto fisso in alto, alto quanto il 36% dello schermo piccolo (svh),
                     così non cambia misura col testo né con la barra di Safari */}
                 <div className="relative mb-3 h-[31svh] shrink-0 md:hidden [@media(max-height:620px)]:h-[26svh]">
