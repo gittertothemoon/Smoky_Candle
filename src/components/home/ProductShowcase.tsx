@@ -51,7 +51,8 @@ export default function ProductShowcase({ onAtmosfera, onAddToCart }: ProductSho
 
     return (
         <section ref={sezione} id="fragranze" className="relative h-[300vh] bg-fuliggine text-carta">
-            <div className="sticky top-0 h-[100dvh] overflow-hidden">
+            {/* sul telefono il blocco è alto quanto il suo contenuto: niente vuoto sotto il bottone quando la sezione finisce */}
+            <div className="sticky top-0 overflow-hidden md:h-[100dvh]">
                 {/* il colore della fragranza che si diffonde dietro la candela */}
                 {/* (due strati in dissolvenza: i gradienti non si possono animare direttamente) */}
                 {fragranze.map((x) => (
@@ -65,7 +66,7 @@ export default function ProductShowcase({ onAtmosfera, onAddToCart }: ProductSho
                         }}
                     />
                 ))}
-            <div className="relative mx-auto flex h-full max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
+            <div className="relative mx-auto flex max-w-[1320px] md:h-full flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
                 {/* telefono: la candela ha un posto fisso in alto, alto quanto il 36% dello schermo piccolo (svh),
                     così non cambia misura col testo né con la barra di Safari */}
                 <div className="relative mb-3 h-[31svh] shrink-0 md:hidden [@media(max-height:620px)]:h-[26svh]">

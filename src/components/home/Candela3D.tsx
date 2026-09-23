@@ -3,7 +3,8 @@
 // three.js vive di oggetti mutati a ogni frame dentro useFrame: è il modello di R3F, non un errore
 /* eslint-disable react-hooks/immutability */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Billboard, Environment, Lightformer, MeshTransmissionMaterial } from "@react-three/drei";
@@ -218,9 +219,15 @@ function useTexturaScatola() {
             tmp.width = img.width;
             tmp.height = img.height;
             const t2 = tmp.getContext("2d")!;
-            t2.filter = "grayscale(1) contrast(1.15)";
             t2.drawImage(img, 0, 0);
-            t2.filter = "none";
+            // grigio e un filo di contrasto fatti a mano: Safari ignora ctx.filter e lascerebbe il portone dorato
+            const px = t2.getImageData(0, 0, tmp.width, tmp.height);
+            const d = px.data;
+            for (let i = 0; i < d.length; i += 4) {
+                const l = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+                d[i] = d[i + 1] = d[i + 2] = Math.min(255, Math.max(0, (l - 128) * 1.15 + 128));
+            }
+            t2.putImageData(px, 0, 0);
             // via il nome della fragranza: sul pack c'è solo il marchio
             t2.fillStyle = "#ffffff";
             t2.fillRect(img.width * 0.36, img.height * 0.79, img.width * 0.28, img.height * 0.12);
@@ -243,6 +250,9 @@ export interface Schermo {
     cx: number;
     cy: number;
     h: number;
+    /** l'angolo in alto a sinistra della tela sullo schermo (sul telefono la tela non parte da 0,0) */
+    ox: number;
+    oy: number;
 }
 
 function sopraLaCandela(x: number, y: number, s: Schermo, larghezza = 0.36) {
@@ -634,8 +644,8 @@ function Scena({ schermo, chiusura, scatola, onApri, onAperta, acceso, atmosfera
         const posFiamma = vec.set(0, cimaCera + 0.14, 0);
         fiamma.current?.parent?.localToWorld(posFiamma);
         posFiamma.project(camera);
-        const fx = (posFiamma.x * 0.5 + 0.5) * size.width;
-        const fy = (-posFiamma.y * 0.5 + 0.5) * size.height;
+        const fx = (posFiamma.x * 0.5 + 0.5) * size.width + schermo.current.ox;
+        const fy = (-posFiamma.y * 0.5 + 0.5) * size.height + schermo.current.oy;
         let spinta = 0;
         const p = puntatore.current;
         const hPx = schermo.current.h || size.height * 0.4;
@@ -873,6 +883,7 @@ function Scena({ schermo, chiusura, scatola, onApri, onAperta, acceso, atmosfera
 /* ---------- il viaggio: la candela segue le ancore della pagina ---------- */
 
 interface Ancora {
+    el: HTMLElement;
     tipo: string;
     cx: number;
     cy: number;
@@ -898,6 +909,7 @@ function leggiAncore(vh: number): Ancora[] {
             p = corsa > 0 ? limita(-rs.top / corsa) : 0;
         }
         return {
+            el,
             tipo: el.dataset.ancora ?? "",
             cx: r.left + r.width / 2,
             cy: r.top + r.height * Number(el.dataset.centroY ?? 0.5),
@@ -912,15 +924,114 @@ const ALTEZZA_SCENA = 2.55;
 const DISTANZA = 10;
 const FOV = 30;
 
+/*
+ * Sul telefono la candela non insegue la pagina: la tela sta dentro la sua ancora e scorre con lei,
+ * mossa da Safari stesso. Una tela fissa che rilegge la posizione a ogni fotogramma arriva sempre
+ * un fotogramma dopo lo scroll, e sul telefono si vede come una candela che sobbalza.
+ */
+const attaccata = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+
+/** Sul telefono: in quale ancora sta la tela, e dove sta la candela dentro la tela (in pixel). */
+interface Aggancio {
+    el: HTMLElement | null;
+    tipo: string;
+    cx: number;
+    cy: number;
+    h: number;
+}
+
+/*
+ * Sceglie l'ancora e ci mette dentro la tela. Si passa alla prossima PRIMA che entri nello schermo
+ * (scendendo, quando la sua candela sta per affacciarsi dal basso; salendo, dall'alto): così la
+ * candela è già lì quando arriva, invece di comparire di colpo dentro uno spazio vuoto.
+ * In quella che si lascia resta una foto ferma della candela, che esce con la pagina.
+ */
+function aggancia(host: HTMLDivElement, ag: Aggancio, verso: number, foto: (() => HTMLCanvasElement | null) | null) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const ancore = leggiAncore(vh);
+    if (!ancore.length) return;
+    const dentro = (a: Ancora) => a.cy + a.h * 0.55 > 0 && a.cy - a.h * 0.6 < vh;
+    let i = ancore.findIndex((a) => a.el === ag.el);
+    if (i < 0 || !dentro(ancore[i])) {
+        // primo aggancio o salto con un link: la più vicina al centro dello schermo
+        i = 0;
+        for (let k = 1; k < ancore.length; k++) {
+            if (Math.abs(ancore[k].cy - vh / 2) < Math.abs(ancore[i].cy - vh / 2)) i = k;
+        }
+    } else if (verso > 0 && ancore[i + 1] && ancore[i + 1].cy - ancore[i + 1].h * 0.6 < vh) {
+        i++;
+    } else if (verso < 0 && ancore[i - 1] && ancore[i - 1].cy + ancore[i - 1].h * 0.55 > 0) {
+        i--;
+    }
+    const scelta = ancore[i];
+    const el = scelta.el;
+    const r = el.getBoundingClientRect();
+    const cx = r.width / 2;
+    const cy = r.height * Number(el.dataset.centroY ?? 0.5);
+    // la tela ha la stessa misura in ogni ancora: ridimensionarla la svuota per un fotogramma, e si vede.
+    // Sopra c'è spazio per il coperchio che vola via e per il fumo; mai più larga dello schermo
+    const hMax = Math.max(...ancore.map((a) => a.h));
+    const larga = Math.round(Math.min(hMax * 1.6, vw));
+    const alta = Math.round(hMax * 2.5);
+    const sopra = Math.round(hMax * 1.7);
+    const sinistra = Math.round(Math.min(Math.max(cx - larga / 2, -r.left), vw - r.left - larga));
+    const alto = Math.round(cy - sopra);
+
+    if (host.parentElement !== el) {
+        const vecchia = host.parentElement;
+        const prima = ancore.find((a) => a.el === vecchia);
+        const tela = foto?.();
+        if (vecchia && prima && dentro(prima) && tela) {
+            const c = document.createElement("canvas");
+            c.width = tela.width;
+            c.height = tela.height;
+            c.getContext("2d")?.drawImage(tela, 0, 0);
+            c.dataset.fotoCandela = "";
+            c.setAttribute("aria-hidden", "true");
+            c.style.cssText = host.style.cssText;
+            vecchia.appendChild(c);
+        }
+        el.querySelector(":scope > [data-foto-candela]")?.remove();
+        el.appendChild(host);
+    }
+    const stile = { left: `${sinistra}px`, top: `${alto}px`, width: `${larga}px`, height: `${alta}px` };
+    for (const [k, v] of Object.entries(stile)) {
+        if (host.style.getPropertyValue(k) !== v) host.style.setProperty(k, v);
+    }
+    ag.el = el;
+    ag.tipo = scelta.tipo;
+    ag.cx = cx - sinistra;
+    ag.cy = sopra;
+    ag.h = scelta.h;
+}
+
+/* Dà a chi aggancia un modo di fotografare la candela così com'è adesso */
+function Fotografo({ rif }: { rif: React.RefObject<(() => HTMLCanvasElement) | null> }) {
+    const { gl, scene, camera } = useThree();
+    useEffect(() => {
+        rif.current = () => {
+            // si ridisegna subito prima di copiare: il buffer della tela vale solo nel fotogramma in cui è disegnato
+            gl.render(scene, camera);
+            return gl.domElement;
+        };
+        return () => {
+            rif.current = null;
+        };
+    }, [gl, scene, camera, rif]);
+    return null;
+}
+
 interface ViaggioProps {
     schermo: React.RefObject<Schermo>;
+    aggancio: React.RefObject<Aggancio> | null;
     chiusura: React.RefObject<number>;
     girabile: boolean;
     libera: boolean;
     children: React.ReactNode;
 }
 
-function Viaggio({ schermo, chiusura, girabile, libera, children }: ViaggioProps) {
+function Viaggio({ schermo, aggancio, chiusura, girabile, libera, children }: ViaggioProps) {
     const g = useRef<THREE.Group>(null);
     const giro = useRef({ attuale: 0, trascina: 0, x0: 0, attivo: false });
     const cb = useRef({ girabile, libera });
@@ -958,6 +1069,31 @@ function Viaggio({ schermo, chiusura, girabile, libera, children }: ViaggioProps
         if (!gr) return;
         const vw = state.size.width;
         const vh = state.size.height;
+        const dt = Math.min(delta, 0.05);
+        let cx: number;
+        let cy: number;
+        let h: number;
+        let giroScroll: number;
+        const ag = aggancio?.current;
+        if (ag) {
+            // telefono: la tela scorre già con l'ancora, qui si legge solo quanto è avanti la sezione
+            if (!ag.el) return;
+            let p = 0;
+            const sezione = ag.el.closest("section");
+            if (sezione) {
+                const rs = sezione.getBoundingClientRect();
+                const corsa = rs.height - window.innerHeight;
+                p = corsa > 0 ? limita(-rs.top / corsa) : 0;
+            }
+            cx = ag.cx;
+            cy = ag.cy;
+            h = ag.h;
+            giroScroll = ag.tipo === "fragranze" ? p * Math.PI * 2 : 0;
+            chiusura.current = ag.tipo === "cofanetti" ? limita(p / 0.6) : 0;
+            const tela = state.gl.domElement.getBoundingClientRect();
+            schermo.current.ox = tela.left;
+            schermo.current.oy = tela.top;
+        } else {
         const ancore = leggiAncore(vh);
         if (!ancore.length) return;
 
@@ -977,23 +1113,23 @@ function Viaggio({ schermo, chiusura, girabile, libera, children }: ViaggioProps
         // (lo scambio avviene quando sono fuori tutte e due, quindi non si vede)
         if (b && vw < 768) f = a.cy > -a.h * 0.6 ? 0 : 1;
         const mix = (x: number, y: number) => x + (y - x) * f;
-        const cx = b ? mix(a.cx, b.cx) : a.cx;
-        const cy = b ? mix(a.cy, b.cy) : a.cy;
-        const h = b ? mix(a.h, b.h) : a.h;
+        cx = b ? mix(a.cx, b.cx) : a.cx;
+        cy = b ? mix(a.cy, b.cy) : a.cy;
+        h = b ? mix(a.h, b.h) : a.h;
         const valore = (x: Ancora | null, tipo: string, fn: (p: number) => number) => (x && x.tipo === tipo ? fn(x.p) : 0);
-        const giroScroll = mix(valore(a, "fragranze", (p) => p * Math.PI * 2), valore(b, "fragranze", (p) => p * Math.PI * 2));
+        giroScroll = mix(valore(a, "fragranze", (p) => p * Math.PI * 2), valore(b, "fragranze", (p) => p * Math.PI * 2));
         chiusura.current = mix(valore(a, "cofanetti", (p) => limita(p / 0.6)), valore(b, "cofanetti", (p) => limita(p / 0.6)));
         if (!b) {
             chiusura.current = valore(a, "cofanetti", (p) => limita(p / 0.6));
         }
+        }
 
-        schermo.current.cx = cx;
-        schermo.current.cy = cy;
+        schermo.current.cx = cx + schermo.current.ox;
+        schermo.current.cy = cy + schermo.current.oy;
         schermo.current.h = h;
 
         const wpp = (2 * DISTANZA * Math.tan((FOV * Math.PI) / 360)) / vh;
         const scala = (h * wpp) / ALTEZZA_SCENA;
-        const dt = Math.min(delta, 0.05);
         // posizione esatta, senza ammorbidire: con lo scroll veloce del telefono un inseguimento
         // si vede come una candela che "nuota" dietro la pagina
         gr.position.x = (cx - vw / 2) * wpp;
@@ -1017,7 +1153,42 @@ interface Candela3DProps extends Omit<ScenaProps, "schermo" | "chiusura"> {
 }
 
 export default function Candela3D({ girabile, ...scena }: Candela3DProps) {
-    const schermo = useRef<Schermo>({ cx: -9999, cy: -9999, h: 0 });
+    const schermo = useRef<Schermo>({ cx: -9999, cy: -9999, h: 0, ox: 0, oy: 0 });
+    const aggancio = useRef<Aggancio>({ el: null, tipo: "", cx: 0, cy: 0, h: 0 });
+    const fotografa = useRef<(() => HTMLCanvasElement) | null>(null);
+    // sul telefono la tela vive in un contenitore che passa da un'ancora all'altra (la tela non si rifà)
+    const [host] = useState(() => {
+        if (!attaccata) return null;
+        const d = document.createElement("div");
+        d.setAttribute("aria-hidden", "true");
+        d.style.cssText = "position:absolute;z-index:30;pointer-events:none";
+        return d;
+    });
+    useLayoutEffect(() => {
+        if (!host) return;
+        // la tela aspetta di avere una misura: si accende appena il contenitore entra nell'ancora
+        aggancia(host, aggancio.current, 0, null);
+        let richiesta = 0;
+        let ultimaY = window.scrollY;
+        const aggiorna = () => {
+            if (richiesta) return;
+            richiesta = requestAnimationFrame(() => {
+                richiesta = 0;
+                const y = window.scrollY;
+                aggancia(host, aggancio.current, Math.sign(y - ultimaY), fotografa.current);
+                ultimaY = y;
+            });
+        };
+        window.addEventListener("scroll", aggiorna, { passive: true });
+        window.addEventListener("resize", aggiorna);
+        return () => {
+            window.removeEventListener("scroll", aggiorna);
+            window.removeEventListener("resize", aggiorna);
+            cancelAnimationFrame(richiesta);
+            host.remove();
+            document.querySelectorAll("[data-foto-candela]").forEach((c) => c.remove());
+        };
+    }, [host]);
     const chiusura = useRef(0);
     // quando nessuna ancora è in vista (laboratorio, ordine, footer) il 3D non disegna niente
     const [inVista, setInVista] = useState(true);
@@ -1036,23 +1207,31 @@ export default function Candela3D({ girabile, ...scena }: Candela3DProps) {
         document.querySelectorAll("[data-ancora]").forEach((el) => io.observe(el.closest("section") ?? el));
         return () => io.disconnect();
     }, []);
+    const tela = (
+        <Canvas
+            // sul telefono la tela è grande quanto la candela, non quanto lo schermo: può permettersi pixel pieni
+            dpr={host ? [1, 2] : leggero ? [1, 1.5] : [1, 1.75]}
+            frameloop={inVista ? "always" : "never"}
+            camera={{ position: [0, 0, DISTANZA], fov: FOV }}
+            gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping }}
+            // nessun evento sulla tela: non serve rimisurarla a ogni scroll
+            resize={{ scroll: false }}
+            style={{ pointerEvents: "none" }}
+        >
+            {host && <Fotografo rif={fotografa} />}
+            <Viaggio schermo={schermo} aggancio={host ? aggancio : null} chiusura={chiusura} girabile={girabile} libera={scena.scatola === "via"}>
+                <Oscilla>
+                    <Scena {...scena} schermo={schermo} chiusura={chiusura} />
+                </Oscilla>
+            </Viaggio>
+        </Canvas>
+    );
+    if (host) return createPortal(<div data-candela className="h-full w-full">{tela}</div>, host);
     return (
         // alta quanto lo schermo con la barra di Safari nascosta (lvh): quando la barra va e viene
         // la tela non si ridimensiona e la candela non salta
         <div data-candela className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[100lvh]" aria-hidden="true">
-            <Canvas
-                dpr={leggero ? [1, 1.5] : [1, 1.75]}
-                frameloop={inVista ? "always" : "never"}
-                camera={{ position: [0, 0, DISTANZA], fov: FOV }}
-                gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping }}
-                style={{ pointerEvents: "none" }}
-            >
-                <Viaggio schermo={schermo} chiusura={chiusura} girabile={girabile} libera={scena.scatola === "via"}>
-                    <Oscilla>
-                        <Scena {...scena} schermo={schermo} chiusura={chiusura} />
-                    </Oscilla>
-                </Viaggio>
-            </Canvas>
+            {tela}
         </div>
     );
 }

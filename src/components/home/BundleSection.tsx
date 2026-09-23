@@ -14,8 +14,9 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
         <section id="cofanetti" className="relative h-[220vh] bg-fuliggine text-carta">
             <div className="sticky top-0 mx-auto flex h-[100dvh] max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
                 {/* telefono: la scatola sta sopra il testo, in un posto fisso: il coperchio scende da dove non c'è niente da leggere */}
-                <div className="relative h-[44svh] shrink-0 md:hidden">
-                    <div data-ancora="cofanetti" data-altezza="0.64" data-centro-y="0.58" className="absolute inset-0" />
+                {/* stessa misura di candela di prima (0,74 x 38 = 0,64 x 44), ma più in alto: meno vuoto quando la sezione arriva */}
+                <div className="relative h-[38svh] shrink-0 md:hidden">
+                    <div data-ancora="cofanetti" data-altezza="0.74" data-centro-y="0.5" className="absolute inset-0" />
                 </div>
 
                 <div className="md:col-span-6 lg:col-span-5">
