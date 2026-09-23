@@ -58,7 +58,8 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
         {/* la scena 3D continua: il pack chiuso se ne va e la candela diventa il cofanetto che scegli */}
         <section ref={scena} id="scegli-cofanetto" aria-label="I cofanetti" className="relative h-[420vh] bg-fuliggine text-carta">
             <div className="sticky top-0 mx-auto flex h-[100dvh] max-w-[1320px] flex-col px-4 pt-[4.5rem] pb-6 sm:px-6 md:grid md:grid-cols-12 md:items-center md:gap-6 md:pt-20 lg:px-10">
-                <div className="relative h-[40svh] shrink-0 md:order-2 md:col-span-7 md:h-[76vh]">
+                {/* sul telefono scena e scheda devono stare insieme nello schermo, anche basso: la scheda del Discovery è la più lunga */}
+                <div className="relative h-[35svh] shrink-0 md:order-2 md:col-span-7 md:h-[76vh] [@media(max-height:620px)]:h-[31svh]">
                     {/* sullo schermo grande la colonna è alta: il cofanetto con la scatola ci deve stare intero */}
                     <div data-ancora="composizione" data-altezza="0.52" data-centro-y="0.62" className="absolute inset-0 md:hidden" />
                     <div data-ancora="composizione" data-altezza="0.4" data-centro-y="0.56" className="absolute inset-0 hidden md:block" />
@@ -75,11 +76,11 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
                                         role="radio"
                                         aria-checked={scelto}
                                         onClick={() => vaiA(i)}
-                                        className={`flex min-h-16 w-full items-baseline justify-between gap-4 py-4 text-left transition-colors duration-300 ${
+                                        className={`flex min-h-12 w-full items-baseline justify-between gap-4 py-3 text-left transition-colors duration-300 md:min-h-16 md:py-4 ${
                                             scelto ? "text-carta" : "text-carta/45 hover:text-carta/80"
                                         }`}
                                     >
-                                        <span className="font-serif text-[clamp(1.75rem,3.2vw,2.75rem)] leading-none">{c.nome}</span>
+                                        <span className="font-serif text-[clamp(1.5rem,3.2vw,2.75rem)] leading-none">{c.nome}</span>
                                         <span className="font-serif text-xl md:text-2xl">{c.prezzo}&nbsp;&euro;</span>
                                     </button>
                                     {/* la scheda si apre solo sul cofanetto scelto: grid-rows anima l'altezza senza misurarla */}
@@ -89,11 +90,11 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
                                         inert={!scelto}
                                     >
                                         <div className="overflow-hidden">
-                                            <p className="max-w-[40ch] text-base leading-relaxed text-carta/75">{c.descrizione}</p>
+                                            <p className="max-w-[40ch] text-[0.95rem] leading-relaxed text-carta/75 md:text-base">{c.descrizione}</p>
                                             <button
                                                 type="button"
                                                 onClick={() => onAddToCart(c)}
-                                                className="mt-5 mb-6 inline-flex min-h-12 items-center rounded-full bg-carta px-7 text-base text-fuliggine transition-colors hover:bg-white"
+                                                className="mt-3 mb-4 inline-flex min-h-12 items-center rounded-full bg-carta px-7 text-base text-fuliggine transition-colors hover:bg-white md:mt-5 md:mb-6"
                                             >
                                                 Aggiungi {c.nome} al carrello
                                             </button>

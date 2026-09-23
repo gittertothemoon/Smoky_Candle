@@ -24,11 +24,11 @@ export default function Footer({ acceso, ore }: FooterProps) {
             <div className="mx-auto grid max-w-[1320px] grid-cols-1 gap-12 px-4 pt-16 pb-12 sm:px-6 md:grid-cols-12 md:gap-6 md:pt-24 md:pb-16 lg:px-10">
                 <div className="md:col-span-7">
                     <Image
-                        src="/images/wordmark.webp"
+                        src="/images/wordmark-ritaglio.webp"
                         alt="Smoky Candle"
-                        width={200}
-                        height={200}
-                        className="h-20 w-auto [filter:brightness(0)_invert(1)] md:h-24"
+                        width={485}
+                        height={330}
+                        className="h-16 w-auto [filter:brightness(0)_invert(1)] md:h-20"
                     />
                     <p className="mt-8 max-w-[18ch] font-serif text-[clamp(1.9rem,4vw,3.25rem)] leading-[1.05] tracking-[-0.01em]" aria-live="polite">
                         {saluto}

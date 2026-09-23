@@ -37,14 +37,15 @@ export default function Navbar({ cartCount, onCartOpen }: NavbarProps) {
             }`}
         >
             <nav className="mx-auto flex h-16 max-w-[1320px] items-center justify-between px-4 sm:px-6 md:h-20 lg:px-10">
-                <a href="#" aria-label="Smoky Candle, torna all'inizio" className="-ml-2 flex h-full items-center">
+                <a href="#" aria-label="Smoky Candle, torna all'inizio" className="flex h-full items-center">
+                    {/* il logo ritagliato sul disegno: il file quadrato aveva un terzo di margine vuoto e lo rimpiccioliva */}
                     <Image
-                        src="/images/wordmark.webp"
+                        src="/images/wordmark-ritaglio.webp"
                         alt=""
-                        width={200}
-                        height={200}
+                        width={485}
+                        height={330}
                         priority
-                        className={`h-16 w-auto md:h-20 [filter:brightness(0)_invert(1)]`}
+                        className="h-12 w-auto [filter:brightness(0)_invert(1)] md:h-[3.75rem]"
                     />
                 </a>
 
