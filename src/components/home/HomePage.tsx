@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useMovimentoRidotto } from "@/lib/movimento";
 import { useCandela } from "@/components/home/useCandela";
@@ -12,7 +12,7 @@ import BundleSection from "@/components/home/BundleSection";
 import BrandStory from "@/components/home/BrandStory";
 import Footer from "@/components/layout/Footer";
 import CartModal, { type CartItem } from "@/components/cart/CartModal";
-import type { Articolo, Atmosfera } from "@/lib/catalogo";
+import { cofanetti, fragranze, type Articolo, type Atmosfera } from "@/lib/catalogo";
 
 // il 3D arriva dopo: la pagina si legge subito, la candela entra quando è pronta
 const Candela3D = dynamic(() => import("@/components/home/Candela3D"), { ssr: false });
@@ -68,6 +68,53 @@ export default function HomePage() {
     const [cartOpen, setCartOpen] = useState(false);
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
+    /*
+     * Il carrello sopravvive al passaggio da Stripe: chi annulla il pagamento lo ritrova com'era.
+     * Solo gli id e le quantità, riletti dal catalogo (prezzi e nomi restano quelli del sito).
+     * Al ritorno da un pagamento riuscito si svuota e compare il grazie.
+     */
+    const [esito, setEsito] = useState<"ok" | "annullato" | null>(null);
+    const carrelloLetto = useRef(false);
+    useEffect(() => {
+        const q = new URLSearchParams(window.location.search).get("ordine");
+        const riuscito = q === "ok";
+        try {
+            if (riuscito) localStorage.removeItem("carrello");
+            else {
+                const salvato = JSON.parse(localStorage.getItem("carrello") ?? "[]") as { id: string; q: number }[];
+                const tutti: Articolo[] = [...fragranze, ...cofanetti];
+                const ritrovati: CartItem[] = [];
+                for (const r of salvato) {
+                    const articolo = tutti.find((a) => a.id === r.id);
+                    if (articolo && Number.isInteger(r.q) && r.q > 0) ritrovati.push({ articolo, quantity: r.q });
+                }
+                // eslint-disable-next-line react-hooks/set-state-in-effect -- lettura una tantum dal browser dopo l'idratazione
+                if (ritrovati.length) setCartItems(ritrovati);
+            }
+        } catch {
+            // navigazione privata o storage bloccato: il carrello parte vuoto
+        }
+        carrelloLetto.current = true;
+        if (q === "ok" || q === "annullato") {
+            setEsito(q);
+            if (q === "annullato") setCartOpen(true);
+            window.history.replaceState(null, "", window.location.pathname);
+        }
+    }, []);
+    useEffect(() => {
+        if (!carrelloLetto.current) return;
+        try {
+            localStorage.setItem("carrello", JSON.stringify(cartItems.map((i) => ({ id: i.articolo.id, q: i.quantity }))));
+        } catch {
+            // niente storage: pazienza
+        }
+    }, [cartItems]);
+    useEffect(() => {
+        if (!esito) return;
+        const t = setTimeout(() => setEsito(null), 9000);
+        return () => clearTimeout(t);
+    }, [esito]);
+
     const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
     const handleAddToCart = useCallback((articolo: Articolo) => {
@@ -121,6 +168,23 @@ export default function HomePage() {
                 onOre={candela.setOre}
                 onFinita={candela.finisce}
             />}
+            {/* l'esito del pagamento, al ritorno da Stripe */}
+            {esito && (
+                <div
+                    role="status"
+                    className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-md rounded-2xl bg-carta px-5 py-4 text-fuliggine shadow-[0_10px_40px_rgba(0,0,0,0.35)] md:bottom-6"
+                >
+                    <p className="font-serif text-xl">{esito === "ok" ? "Grazie, è tutto a posto." : "Pagamento annullato."}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-fumo">
+                        {esito === "ok"
+                            ? "Il pagamento è andato a buon fine. Ti scriviamo appena la tua candela parte."
+                            : "Nessun addebito. Il carrello è rimasto com'era, quando vuoi riprendi da lì."}
+                    </p>
+                    <button type="button" onClick={() => setEsito(null)} className="mt-2 min-h-11 text-sm underline underline-offset-4">
+                        Chiudi
+                    </button>
+                </div>
+            )}
             <CartModal
                 isOpen={cartOpen}
                 onClose={chiudiCarrello}

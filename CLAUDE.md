@@ -8,7 +8,7 @@ Next.js 16 (Turbopack) + React 19 + Tailwind v4 + framer-motion + three.js (R3F 
 - **Online dal 23/09/2026** (commit `25f06ac` su `main`): la rinfrescata 3D con tappo, cofanetti composti dallo scroll,
   video verticale, laboratorio, footer nuovo. Next 16.2.7.
 - Il push su `main` fa partire il deploy Vercel (progetto `smoky-candle`): serve sempre il via di Ivan.
-- Aperti: Lighthouse mobile da rimisurare; Stripe al posto dell'ordine via mail (serve la P.IVA).
+- Aperti: pagamento Stripe pronto in sandbox, online manca la chiave live (dopo il cambio nome dell'account).
 
 ## Come si lavora
 
@@ -55,5 +55,13 @@ Next.js 16 (Turbopack) + React 19 + Tailwind v4 + framer-motion + three.js (R3F 
 
 ## Onestà dei contenuti
 
-Niente recensioni inventate, niente prezzi barrati mai praticati, niente newsletter finta. Il checkout è un ordine via mail precompilata
-a info@smokycandle.it finché non c'è un pagamento vero (serve la P.IVA, decisione di Ivan).
+Niente recensioni inventate, niente prezzi barrati mai praticati, niente newsletter finta.
+
+## Pagamenti
+
+- Stripe Checkout ospitato: `src/app/api/checkout/route.ts` crea la sessione; i prezzi li legge dal catalogo, dal browser
+  arrivano solo id e quantità. Spedizione gratuita solo Italia (2-4 giorni lavorativi), telefono richiesto.
+- Chiave in `STRIPE_SECRET_KEY` (`.env.local` in locale con la chiave della sandbox; in Vercel quella live).
+- Il carrello resta nel browser (`localStorage`, solo id e quantità) così chi annulla lo ritrova; `?ordine=ok|annullato` al ritorno.
+- Se il pagamento non parte, il carrello offre la mail precompilata come riserva.
+- L'account Stripe live si presentava come "Vespero": va rinominato "Smoky Candle" prima di mettere la chiave live.

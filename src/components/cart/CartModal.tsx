@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus } from "@phosphor-icons/react";
 import Image from "next/image";
@@ -19,7 +19,7 @@ interface CartModalProps {
     onRemove: (id: string) => void;
 }
 
-/** La mail d'ordine già compilata: righe, quantità, totale, e lo spazio per l'indirizzo. */
+/** La mail d'ordine già compilata: la riserva, se il pagamento con Stripe non parte. */
 function linkOrdine(items: CartItem[], totale: number) {
     const righe = items.map(
         (i) => `- ${i.quantity} x ${i.articolo.nome} (${i.articolo.prezzo} euro cad.) = ${i.articolo.prezzo * i.quantity} euro`
@@ -41,6 +41,27 @@ function linkOrdine(items: CartItem[], totale: number) {
 export default function CartModal({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartModalProps) {
     const chiudiRef = useRef<HTMLButtonElement>(null);
     const totale = items.reduce((sum, i) => sum + i.articolo.prezzo * i.quantity, 0);
+    const [inPagamento, setInPagamento] = useState(false);
+    const [errore, setErrore] = useState(false);
+
+    // il pagamento: il server crea la pagina di Stripe (coi prezzi del catalogo) e ci si va
+    async function paga() {
+        setInPagamento(true);
+        setErrore(false);
+        try {
+            const r = await fetch("/api/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ righe: items.map((i) => ({ id: i.articolo.id, quantita: i.quantity })) }),
+            });
+            const dati = (await r.json()) as { url?: string };
+            if (!r.ok || !dati.url) throw new Error("pagamento");
+            window.location.href = dati.url;
+        } catch {
+            setErrore(true);
+            setInPagamento(false);
+        }
+    }
 
     useEffect(() => {
         if (!isOpen) return;
@@ -173,15 +194,27 @@ export default function CartModal({ isOpen, onClose, items, onUpdateQuantity, on
                                     <span className="text-base text-fumo">Totale</span>
                                     <span className="font-serif text-3xl">{totale}&nbsp;&euro;</span>
                                 </div>
-                                <a
-                                    href={linkOrdine(items, totale)}
-                                    className="flex min-h-13 w-full items-center justify-center rounded-full bg-accento text-base text-carta transizione-accento hover:opacity-90"
+                                <button
+                                    type="button"
+                                    onClick={paga}
+                                    disabled={inPagamento}
+                                    className="flex min-h-13 w-full items-center justify-center rounded-full bg-accento text-base text-carta transizione-accento hover:opacity-90 disabled:opacity-60"
                                 >
-                                    Invia l&apos;ordine via mail
-                                </a>
-                                <p className="mt-3 text-sm leading-relaxed text-fumo">
-                                    Si apre la tua mail con l&apos;ordine già scritto. Ti scriviamo noi entro un giorno lavorativo per il pagamento. La spedizione in Italia è gratuita.
-                                </p>
+                                    {inPagamento ? "Un attimo…" : "Vai al pagamento"}
+                                </button>
+                                {errore ? (
+                                    <p className="mt-3 text-sm leading-relaxed text-fuliggine" role="alert">
+                                        Il pagamento non è partito. Riprova tra poco, oppure{" "}
+                                        <a href={linkOrdine(items, totale)} className="underline underline-offset-4">
+                                            mandaci l&apos;ordine via mail
+                                        </a>
+                                        .
+                                    </p>
+                                ) : (
+                                    <p className="mt-3 text-sm leading-relaxed text-fumo">
+                                        Paghi con carta in modo sicuro, su Stripe. La spedizione in Italia è gratuita e arriva in 2-4 giorni.
+                                    </p>
+                                )}
                             </div>
                         )}
                     </motion.div>
