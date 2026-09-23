@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cofanetti, fragranze, type Articolo } from "@/lib/catalogo";
+import { cofanetti, costoSpedizione, fragranze, type Articolo } from "@/lib/catalogo";
 
 /*
  * Il pagamento: crea una sessione di Stripe Checkout e rimanda l'URL della pagina di pagamento.
@@ -66,9 +66,12 @@ export async function POST(req: Request) {
     p.set("shipping_address_collection[allowed_countries][0]", "IT");
     const spedizione = "shipping_options[0][shipping_rate_data]";
     p.set(`${spedizione}[type]`, "fixed_amount");
-    p.set(`${spedizione}[fixed_amount][amount]`, "0");
+    // 5,90 € sotto i 50 €, gratuita da lì in su: calcolata qui, sui prezzi del catalogo
+    const subtotale = righe.reduce((s, r) => s + catalogo.get(r.id)!.prezzo * r.quantita, 0);
+    const costo = costoSpedizione(subtotale);
+    p.set(`${spedizione}[fixed_amount][amount]`, String(Math.round(costo * 100)));
     p.set(`${spedizione}[fixed_amount][currency]`, "eur");
-    p.set(`${spedizione}[display_name]`, "Spedizione gratuita in Italia");
+    p.set(`${spedizione}[display_name]`, costo === 0 ? "Spedizione gratuita in Italia" : "Spedizione in Italia");
     p.set(`${spedizione}[delivery_estimate][minimum][unit]`, "business_day");
     p.set(`${spedizione}[delivery_estimate][minimum][value]`, "2");
     p.set(`${spedizione}[delivery_estimate][maximum][unit]`, "business_day");

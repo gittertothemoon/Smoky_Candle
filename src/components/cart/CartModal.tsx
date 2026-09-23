@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus } from "@phosphor-icons/react";
 import Image from "next/image";
-import { EMAIL_ORDINI, type Articolo } from "@/lib/catalogo";
+import { EMAIL_ORDINI, SOGLIA_SPEDIZIONE_GRATUITA, costoSpedizione, euro, type Articolo } from "@/lib/catalogo";
 
 export interface CartItem {
     articolo: Articolo;
@@ -29,7 +29,7 @@ function linkOrdine(items: CartItem[], totale: number) {
         "",
         ...righe,
         "",
-        `Totale: ${totale} euro, spedizione gratuita in Italia.`,
+        `Totale: ${euro(totale + costoSpedizione(totale))} euro, spedizione compresa.`,
         "",
         "Nome e cognome:",
         "Indirizzo di spedizione:",
@@ -41,6 +41,8 @@ function linkOrdine(items: CartItem[], totale: number) {
 export default function CartModal({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartModalProps) {
     const chiudiRef = useRef<HTMLButtonElement>(null);
     const totale = items.reduce((sum, i) => sum + i.articolo.prezzo * i.quantity, 0);
+    const spedizione = costoSpedizione(totale);
+    const mancano = SOGLIA_SPEDIZIONE_GRATUITA - totale;
     const [inPagamento, setInPagamento] = useState(false);
     const [errore, setErrore] = useState(false);
 
@@ -190,9 +192,24 @@ export default function CartModal({ isOpen, onClose, items, onUpdateQuantity, on
 
                         {items.length > 0 && (
                             <div className="border-t border-fuliggine/10 px-6 py-6">
-                                <div className="mb-5 flex items-baseline justify-between">
+                                <div className="space-y-1.5 text-base">
+                                    <div className="flex items-baseline justify-between">
+                                        <span className="text-fumo">Candele</span>
+                                        <span>{euro(totale)}&nbsp;&euro;</span>
+                                    </div>
+                                    <div className="flex items-baseline justify-between">
+                                        <span className="text-fumo">Spedizione in Italia</span>
+                                        <span>{spedizione === 0 ? "Gratuita" : <>{euro(spedizione)}&nbsp;&euro;</>}</span>
+                                    </div>
+                                </div>
+                                {mancano > 0 && (
+                                    <p className="mt-2 text-sm text-fumo">
+                                        Aggiungi ancora {euro(mancano)}&nbsp;&euro; e la spedizione te la regaliamo noi.
+                                    </p>
+                                )}
+                                <div className="mt-4 mb-5 flex items-baseline justify-between border-t border-fuliggine/10 pt-4">
                                     <span className="text-base text-fumo">Totale</span>
-                                    <span className="font-serif text-3xl">{totale}&nbsp;&euro;</span>
+                                    <span className="font-serif text-3xl">{euro(totale + spedizione)}&nbsp;&euro;</span>
                                 </div>
                                 <button
                                     type="button"
@@ -212,7 +229,7 @@ export default function CartModal({ isOpen, onClose, items, onUpdateQuantity, on
                                     </p>
                                 ) : (
                                     <p className="mt-3 text-sm leading-relaxed text-fumo">
-                                        Paghi con carta in modo sicuro, su Stripe. La spedizione in Italia è gratuita e arriva in 2-4 giorni.
+                                        Paghi in modo sicuro su Stripe. La candela arriva in 2-4 giorni lavorativi.
                                     </p>
                                 )}
                             </div>

@@ -46,7 +46,7 @@ export default function BundleSection({ onAddToCart }: BundleSectionProps) {
                         Ogni candela arriva nella sua scatola a tubo bianca, con il portone stampato davanti. Si apre proprio come l&apos;hai aperta tu qui sopra.
                     </p>
                     <p className="mt-4 max-w-[42ch] text-base leading-relaxed text-carta/55">
-                        Per regalarle ci sono tre confezioni, dalla più semplice a quella col biglietto scritto a mano. La spedizione in Italia è gratuita e arriva in 2-4 giorni.
+                        Per regalarle ci sono tre confezioni, dalla più semplice a quella col biglietto scritto a mano. Tutte e tre viaggiano con la spedizione gratuita e arrivano in 2-4 giorni.
                     </p>
                 </div>
                 <div className="relative hidden min-h-0 md:col-span-6 md:col-start-7 md:block md:h-full">

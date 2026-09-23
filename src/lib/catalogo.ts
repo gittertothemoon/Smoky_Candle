@@ -24,7 +24,7 @@ export const fragranze: Fragranza[] = [
         id: "butter",
         atmosfera: "butter",
         nome: "Butter",
-        prezzo: 34,
+        prezzo: 28,
         immagine: "/images/butter.webp",
         descrizione:
             "Vaniglia bourbon, burro caldo, una scia di cedro sul fondo. La fragranza che chiama il divano, una coperta e le sere lunghe.",
@@ -34,7 +34,7 @@ export const fragranze: Fragranza[] = [
         id: "berry",
         atmosfera: "berry",
         nome: "Berry",
-        prezzo: 34,
+        prezzo: 28,
         immagine: "/images/berry.webp",
         descrizione:
             "Frutti di bosco appena colti, rosa damascena e muschio bianco. Fresca e leggera, per le mattine con le finestre aperte.",
@@ -46,7 +46,7 @@ export const cofanetti: Cofanetto[] = [
     {
         id: "duo",
         nome: "Duo",
-        prezzo: 58,
+        prezzo: 52,
         immagine: "/images/cofanetto-duo.webp",
         descrizione:
             "Butter e Berry insieme, per chi non vuole scegliere. O per regalarne una e tenere l'altra.",
@@ -54,7 +54,7 @@ export const cofanetti: Cofanetto[] = [
     {
         id: "cofanetto-regalo",
         nome: "Cofanetto regalo",
-        prezzo: 62,
+        prezzo: 58,
         immagine: "/images/cofanetto-cofanetto-regalo.webp",
         descrizione:
             "Le due candele in una scatola rigida nera, già pronta da regalare così com'è.",
@@ -62,7 +62,7 @@ export const cofanetti: Cofanetto[] = [
     {
         id: "discovery-box",
         nome: "Discovery Box",
-        prezzo: 65,
+        prezzo: 62,
         immagine: "/images/cofanetto-discovery-box.webp",
         descrizione:
             "Il cofanetto regalo con un biglietto scritto a mano, nella sua busta. Per quando vuoi aggiungere due parole tue.",
@@ -84,3 +84,14 @@ export const scene: Record<Atmosfera, { immagine: string; alt: string; riga: str
 };
 
 export const EMAIL_ORDINI = "info@smokycandle.it";
+
+/*
+ * La spedizione in Italia: 5,90 € sotto la soglia, gratuita da 50 € (il Duo e i cofanetti ci arrivano già).
+ * La usano il carrello, per mostrarla, e il pagamento, per farla pagare: una sola fonte.
+ */
+export const SPEDIZIONE = 5.9;
+export const SOGLIA_SPEDIZIONE_GRATUITA = 50;
+export const costoSpedizione = (subtotale: number) => (subtotale >= SOGLIA_SPEDIZIONE_GRATUITA ? 0 : SPEDIZIONE);
+
+/** Un importo in euro all'italiana: 28 resta 28, 5.9 diventa 5,90 */
+export const euro = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(".", ","));

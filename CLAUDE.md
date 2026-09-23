@@ -60,7 +60,9 @@ Niente recensioni inventate, niente prezzi barrati mai praticati, niente newslet
 ## Pagamenti
 
 - Stripe Checkout ospitato: `src/app/api/checkout/route.ts` crea la sessione; i prezzi li legge dal catalogo, dal browser
-  arrivano solo id e quantità. Spedizione gratuita solo Italia (2-4 giorni lavorativi), telefono richiesto.
+  arrivano solo id e quantità. Spedizione solo Italia (2-4 giorni lavorativi), telefono richiesto.
+- Prezzi (da indagine di mercato del 23/09/2026, decisi con Ivan): candela 28 €, Duo 52, Cofanetto regalo 58, Discovery 62.
+  Spedizione 5,90 € sotto i 50 €, gratuita da 50 € (`SPEDIZIONE`, `costoSpedizione` in `catalogo.ts`, una sola fonte).
 - Chiave in `STRIPE_SECRET_KEY` (`.env.local` in locale con la chiave della sandbox; in Vercel quella live).
 - Il carrello resta nel browser (`localStorage`, solo id e quantità) così chi annulla lo ritrova; `?ordine=ok|annullato` al ritorno.
 - Se il pagamento non parte, il carrello offre la mail precompilata come riserva.
