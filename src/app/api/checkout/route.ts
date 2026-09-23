@@ -74,6 +74,19 @@ export async function POST(req: Request) {
     p.set(`${spedizione}[delivery_estimate][maximum][unit]`, "business_day");
     p.set(`${spedizione}[delivery_estimate][maximum][value]`, "4");
     p.set("phone_number_collection[enabled]", "true");
+    // l'identità della pagina di pagamento: il conto Stripe è condiviso, qui si presenta come Smoky Candle
+    p.set("branding_settings[display_name]", "Smoky Candle");
+    p.set("branding_settings[background_color]", "#f5f2ee");
+    p.set("branding_settings[button_color]", "#9c4f16");
+    p.set("branding_settings[border_style]", "pill");
+    if (origine.startsWith("https://")) {
+        p.set("branding_settings[logo][type]", "url");
+        p.set("branding_settings[logo][url]", `${origine}/images/logo-cassa.png`);
+        p.set("branding_settings[icon][type]", "url");
+        p.set("branding_settings[icon][url]", `${origine}/images/icona-cassa.png`);
+    }
+    // sull'estratto conto, dopo il prefisso dell'account
+    p.set("payment_intent_data[statement_descriptor_suffix]", "SMOKY CANDLE");
 
     const risposta = await fetch("https://api.stripe.com/v1/checkout/sessions", {
         method: "POST",
