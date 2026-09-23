@@ -14,7 +14,6 @@ const links = [
     { label: "Fragranze", href: "#fragranze" },
     { label: "Cofanetti", href: "#cofanetti" },
     { label: "Laboratorio", href: "#laboratorio" },
-    { label: "Come si ordina", href: "#come-ordinare" },
 ];
 
 export default function Navbar({ cartCount, onCartOpen }: NavbarProps) {

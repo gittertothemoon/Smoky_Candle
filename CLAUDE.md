@@ -36,6 +36,16 @@ Next.js 16 (Turbopack) + React 19 + Tailwind v4 + framer-motion + three.js (R3F 
 - Il logo del pack è un'immagine già pronta (`public/images/scatola-coperchio.webp`, grigia, senza il nome): costruirla nel
   browser era lenta su iPhone e il pack arrivava dopo la candela. Se cambia l'etichetta va rigenerata (appoggiata sul bianco:
   gli angoli trasparenti diventano neri). La tela 3D entra in dissolvenza solo quando vasetto, etichetta e pack sono pronti.
+- I cofanetti sono una scena 3D, non foto: ancora `composizione`, `Regia` (comp/sballa) scritta dal viaggio; il pack chiuso
+  se ne va quando `#scegli-cofanetto` arriva a metà schermo e la seconda candela, la scatola nera o il biglietto entrano.
+  Le miniature del carrello (`public/images/cofanetto-*.webp`) sono render presi da questa scena: se cambia, rigenerarle.
+- Rotazione delle fragranze, chiusura del pack e montaggio dei cofanetti inseguono lo scroll con una molla (~0,11 s) nel viaggio:
+  la rotella scorre a scatti di 100 px. La POSIZIONE della candela invece non si ammorbidisce mai (tornerebbe il sobbalzo).
+- Il coperchio del regalo ha il portone stampato a caldo: `public/images/lamina-portone.webp` è una maschera (alfa = linee).
+- Il video è verticale (1080x1920): su desktop sta in colonna nel suo formato, mai ritagliato a 21:9.
+- L'audio parte solo dopo un gesto vero (tocco, clic, tasto): lo scroll non conta, regola dei browser. `useCandela` riprova
+  a ogni gesto finché `Crepitio.pronto`; su Safari serve il suono muto dentro il gesto. Il bottone "Attiva il suono" (con
+  `data-suono`) è sempre in vista nell'apertura e lo sblocco generale lo ignora (se no lo spegneva sullo stesso tocco).
 - I suoni di pack e tappo partono dall'animazione (fotogramma del distacco, ogni quarto di giro), mai da un timer a parte.
 - Sul telefono la tela 3D non è fissa: vive dentro l'ancora e scorre con la pagina. Una tela fissa che insegue lo scroll
   arriva un fotogramma dopo e su iPhone sobbalza. La tela ha la stessa misura in ogni ancora (ridimensionarla la svuota)

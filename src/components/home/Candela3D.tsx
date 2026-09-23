@@ -7,8 +7,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Billboard, Environment, Lightformer, MeshTransmissionMaterial } from "@react-three/drei";
+import { Billboard, Environment, Lightformer, MeshTransmissionMaterial, RoundedBox } from "@react-three/drei";
 import type { Atmosfera } from "@/lib/catalogo";
+import { FASI_COFANETTI } from "@/lib/fasiCofanetti";
 
 /*
  * La candela vera, in WebGL: barattolo in vetro ambrato, cera di soia,
@@ -250,7 +251,7 @@ function sopraLaCandela(x: number, y: number, s: Schermo, larghezza = 0.36) {
     return Math.abs(x - s.cx) < s.h * larghezza && Math.abs(y - s.cy) < s.h * 0.55;
 }
 
-export type Suono = "stappo" | "scatto" | "tin";
+export type Suono = "stappo" | "scatto" | "tin" | "chiuso";
 
 interface ScatolaProps {
     stato: StatoScatola;
@@ -260,9 +261,11 @@ interface ScatolaProps {
     schermo: React.RefObject<Schermo>;
     /** Se c'è, la scatola si richiude seguendo lo scroll (0 aperta, 1 chiusa). */
     chiusura?: React.RefObject<number>;
+    /** nei cofanetti il pack chiuso se ne va per far posto al cofanetto scelto */
+    regia?: React.RefObject<Regia>;
 }
 
-function Scatola({ stato, onApri, onAperta, onSuono, schermo, chiusura }: ScatolaProps) {
+function Scatola({ stato, onApri, onAperta, onSuono, schermo, chiusura, regia }: ScatolaProps) {
     const textura = useTexturaScatola();
     const coperchio = useRef<THREE.Group>(null);
     const base = useRef<THREE.Group>(null);
@@ -275,6 +278,7 @@ function Scatola({ stato, onApri, onAperta, onSuono, schermo, chiusura }: Scatol
         cb.current = { stato, onApri, onAperta, onSuono };
     }, [stato, onApri, onAperta, onSuono]);
     const stappata = useRef(false);
+    const suoniScroll = useRef({ r: 0, sballa: 0 });
 
     // col mouse si afferra il coperchio e si tira su; un tocco o un clic la aprono
     useEffect(() => {
@@ -325,9 +329,20 @@ function Scatola({ stato, onApri, onAperta, onSuono, schermo, chiusura }: Scatol
             // il coperchio scende dall'alto, pieno, e la chiude. Niente pezzi semitrasparenti.
             const r = faseScatola(chiusura.current);
             const k = 1 - r;
-            if (tutto.current) tutto.current.visible = chiusura.current > 0.01;
+            // i suoni seguono lo scroll: il colpo quando il coperchio arriva in fondo, il "pop" quando nei cofanetti si stacca
+            const sb = regia?.current.sballa ?? 0;
+            const suoni = suoniScroll.current;
+            if (r > 0.97 && suoni.r <= 0.97) cb.current.onSuono("chiuso");
+            if (sb > 0.2 && suoni.sballa <= 0.2) cb.current.onSuono("stappo");
+            suoni.r = r;
+            suoni.sballa = sb;
+            // nella sezione dei cofanetti il pack chiuso se ne va: il coperchio vola su, la base scende, svaniscono
+            const via = regia?.current.sballa ?? 0;
+            const esce = 1 - Math.pow(1 - via, 3);
+            const resta = 1 - limita((via - 0.3) / 0.45);
+            if (tutto.current) tutto.current.visible = chiusura.current > 0.01 && resta > 0.01;
             if (coperchio.current) {
-                const y = k * k * 3.4;
+                const y = k * k * 3.4 + esce * 3.4;
                 coperchio.current.position.y = y;
                 // il bordo del coperchio supera la cima del vasetto a y ≈ 1.5: sotto quella quota scende dritto
                 const libero = limita((y - 1.6) / 1.6);
@@ -337,13 +352,13 @@ function Scatola({ stato, onApri, onAperta, onSuono, schermo, chiusura }: Scatol
             if (base.current) {
                 // compare in un attimo crescendo appena, ferma sotto il vasetto: non sale sul testo
                 const cresce = limita(chiusura.current / 0.12);
-                base.current.position.y = 0;
+                base.current.position.y = -esce * 1.6;
                 base.current.scale.set(0.9 + cresce * 0.1, cresce, 0.9 + cresce * 0.1);
             }
             for (const m of materiali.current) {
-                m.opacity = 1;
-                m.transparent = false;
-                m.depthWrite = true;
+                m.opacity = resta;
+                m.transparent = resta < 0.999;
+                m.depthWrite = resta >= 0.999;
             }
             return;
         }
@@ -463,6 +478,64 @@ const H_TAPPO = 0.3;
 // il disco interno del tappo (spesso 0,02) appoggia sul labbro del vetro: più in basso il labbro lo buca e fa un cerchio scuro
 const SEDE_TAPPO = H_VETRO + 0.022;
 
+function creaCorpoTappo() {
+    const p = (r: number, y: number) => new THREE.Vector2(r, y);
+    const b = -H_TAPPO;
+    return new THREE.LatheGeometry(
+        [
+            p(0, 0),
+            // il bordo del disco è una curva morbida, non uno smusso: un gradino stretto rifletteva il buio e faceva una riga nera
+            ...Array.from({ length: 7 }, (_, i) => {
+                const a = (i / 6) * (Math.PI / 2);
+                return p(R_TAPPO - 0.03 + Math.sin(a) * 0.03, -0.03 + Math.cos(a) * 0.03);
+            }),
+            p(R_TAPPO, -0.045),
+            p(R_TAPPO, b + 0.06),
+            // il bordino arrotolato, appena più largo
+            p(R_TAPPO + 0.014, b + 0.045),
+            p(R_TAPPO + 0.016, b + 0.02),
+            p(R_TAPPO + 0.006, b),
+            p(0.742, b),
+            p(0.742, -0.02),
+            p(0, -0.02),
+        ],
+        160
+    );
+}
+
+// la zigrinatura: una fascia di righe verticali fitte, fatta alternando il raggio
+function creaZigrinoTappo() {
+    const geo = new THREE.CylinderGeometry(R_TAPPO, R_TAPPO, H_TAPPO - 0.13, 360, 1, true);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        const a = Math.atan2(z, x);
+        const k = 1 + (Math.round((a / (Math.PI * 2)) * 360) % 2 === 0 ? 0.008 : 0);
+        pos.setXYZ(i, x * k, pos.getY(i), z * k);
+    }
+    geo.computeVertexNormals();
+    geo.translate(0, -0.045 - (H_TAPPO - 0.13) / 2, 0);
+    return geo;
+}
+
+function creaMaterialiTappo(): Record<Atmosfera, THREE.MeshStandardMaterial> {
+    return {
+        // nero satinato: al buio si legge dai riflessi, non dal colore
+        berry: new THREE.MeshStandardMaterial({ color: "#1b1a1a", metalness: 0.55, roughness: 0.38, envMapIntensity: 1.3 }),
+        // l'oro puro al buio riflette solo il buio: il disco piatto in cima veniva un cerchio nero.
+        // Metà metallo e una luce propria calda: dorato ovunque, coi riflessi che corrono sulla zigrinatura
+        butter: new THREE.MeshStandardMaterial({
+            color: "#d6ae5c",
+            metalness: 0.45,
+            roughness: 0.36,
+            envMapIntensity: 1.6,
+            emissive: "#7a5620",
+            emissiveIntensity: 0.55,
+        }),
+    };
+}
+
 interface TappoProps {
     atmosfera: Atmosfera;
     chiusura: React.RefObject<number>;
@@ -485,6 +558,7 @@ function Tappo({ atmosfera, chiusura, stato, inScatola, schermo, onStappa, onTol
     const inizio = useRef<number | null>(null);
     // i suoni seguono il tappo: uno scatto a ogni quarto di giro, il "tin" quando si stacca
     const giro = useRef({ quarti: 0, staccato: false });
+    const giroScroll = useRef(0);
 
     // un tocco o un clic sulla candela (senza trascinare) svita il tappo
     useEffect(() => {
@@ -509,64 +583,9 @@ function Tappo({ atmosfera, chiusura, stato, inScatola, schermo, onStappa, onTol
         };
     }, [schermo]);
 
-    const corpo = useMemo(() => {
-        const p = (r: number, y: number) => new THREE.Vector2(r, y);
-        const b = -H_TAPPO;
-        return new THREE.LatheGeometry(
-            [
-                p(0, 0),
-                // il bordo del disco è una curva morbida, non uno smusso: un gradino stretto rifletteva il buio e faceva una riga nera
-                ...Array.from({ length: 7 }, (_, i) => {
-                    const a = (i / 6) * (Math.PI / 2);
-                    return p(R_TAPPO - 0.03 + Math.sin(a) * 0.03, -0.03 + Math.cos(a) * 0.03);
-                }),
-                p(R_TAPPO, -0.045),
-                p(R_TAPPO, b + 0.06),
-                // il bordino arrotolato, appena più largo
-                p(R_TAPPO + 0.014, b + 0.045),
-                p(R_TAPPO + 0.016, b + 0.02),
-                p(R_TAPPO + 0.006, b),
-                p(0.742, b),
-                p(0.742, -0.02),
-                p(0, -0.02),
-            ],
-            160
-        );
-    }, []);
-
-    // la zigrinatura: una fascia di righe verticali fitte, fatta alternando il raggio
-    const zigrino = useMemo(() => {
-        const geo = new THREE.CylinderGeometry(R_TAPPO, R_TAPPO, H_TAPPO - 0.13, 360, 1, true);
-        const pos = geo.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-            const x = pos.getX(i);
-            const z = pos.getZ(i);
-            const a = Math.atan2(z, x);
-            const k = 1 + (Math.round((a / (Math.PI * 2)) * 360) % 2 === 0 ? 0.008 : 0);
-            pos.setXYZ(i, x * k, pos.getY(i), z * k);
-        }
-        geo.computeVertexNormals();
-        geo.translate(0, -0.045 - (H_TAPPO - 0.13) / 2, 0);
-        return geo;
-    }, []);
-
-    const materiali = useMemo(
-        () => ({
-            // nero satinato: al buio si legge dai riflessi, non dal colore
-            berry: new THREE.MeshStandardMaterial({ color: "#1b1a1a", metalness: 0.55, roughness: 0.38, envMapIntensity: 1.3 }),
-            // l'oro puro al buio riflette solo il buio: il disco piatto in cima veniva un cerchio nero.
-            // Metà metallo e una luce propria calda: dorato ovunque, coi riflessi che corrono sulla zigrinatura
-            butter: new THREE.MeshStandardMaterial({
-                color: "#d6ae5c",
-                metalness: 0.45,
-                roughness: 0.36,
-                envMapIntensity: 1.6,
-                emissive: "#7a5620",
-                emissiveIntensity: 0.55,
-            }),
-        }),
-        []
-    );
+    const corpo = useMemo(() => creaCorpoTappo(), []);
+    const zigrino = useMemo(() => creaZigrinoTappo(), []);
+    const materiali = useMemo(() => creaMaterialiTappo(), []);
     useEffect(() => () => Object.values(materiali).forEach((m) => m.dispose()), [materiali]);
 
     useFrame(({ clock }) => {
@@ -620,6 +639,10 @@ function Tappo({ atmosfera, chiusura, stato, inScatola, schermo, onStappa, onTol
         }
         // tappo mai svitato: resta avvitato, anche mentre il pack lo richiude
         const k = c.stato === "via" ? faseTappo(chiusura.current) : 1;
+        // avvitato dallo scroll: uno scatto a ogni quarto di giro, in tutti e due i versi
+        const quartiScroll = Math.floor(limita((k - 0.55) / 0.45) * 12);
+        if (c.stato === "via" && quartiScroll !== giroScroll.current && k > 0.55 && k < 1) c.onSuono("scatto");
+        giroScroll.current = quartiScroll;
         t.visible = k > 0.001;
         // scende dritto fino a poggiare sulla filettatura, poi tre giri in senso orario e cala del passo
         const scende = limita(k / 0.55);
@@ -638,6 +661,567 @@ function Tappo({ atmosfera, chiusura, stato, inScatola, schermo, onStappa, onTol
     );
 }
 
+/* il vetro ambrato: un profilo ruotato, dalle misure del vasetto vero */
+function creaGeoVetro() {
+    // profilo da ruotare: fuori dal basso verso l'alto, poi dentro dall'alto verso il basso
+    const p = (r: number, y: number) => new THREE.Vector2(r, y);
+    const profilo = [
+        p(0, 0),
+        p(0.64, 0),
+        p(0.72, 0.02),
+        p(0.75, 0.09),
+        p(0.75, 1.8),
+        p(0.738, 1.84),
+        p(0.716, 1.87),
+        // due giri di filettatura sul collo
+        p(0.716, 1.9),
+        p(0.732, 1.925),
+        p(0.716, 1.95),
+        p(0.716, 1.98),
+        p(0.732, 2.005),
+        p(0.716, 2.03),
+        p(0.716, 2.08),
+        // il labbro spesso e arrotondato
+        p(0.722, 2.11),
+        p(0.712, 2.14),
+        p(0.69, H_VETRO),
+        p(0.665, 2.145),
+        p(0.652, 2.12),
+        p(0.648, 1.88),
+        p(0.668, 1.84),
+        p(R_INTERNO, 1.8),
+        p(R_INTERNO, FONDO + 0.05),
+        p(0.66, FONDO + 0.01),
+        p(0.6, FONDO),
+        p(0, FONDO),
+    ];
+    return new THREE.LatheGeometry(profilo, 128);
+}
+
+/* ---------- la regia dei cofanetti ---------- */
+
+/**
+ * Quello che succede quando la candela arriva nella sezione dei cofanetti: lo scrive il viaggio a ogni fotogramma,
+ * lo leggono la scatola, la candela che si sposta e gli allestimenti.
+ */
+interface Regia {
+    /** 1 quando la candela sta nell'ancora dei cofanetti */
+    comp: number;
+    /** il pack che se ne va (0 chiuso, 1 via) */
+    sballa: number;
+    /** il cofanetto regalo che si monta (0-1) */
+    regalo: number;
+    /** il biglietto che arriva nella sua busta (0-1) */
+    biglietto: number;
+}
+
+// le due candele affiancate: centri a ±0,85 (vasetto largo 1,5, un dito d'aria in mezzo)
+const PASSO_DUO = 0.85;
+const montaggio = (sballa: number) => morbido((sballa - 0.45) / 0.55);
+
+/*
+ * Sul telefono lo spazio sopra le candele serve solo al coperchio del regalo: finché non arriva,
+ * la composizione sta più in alto (meno vuoto quando la sezione entra), poi scende col coperchio, come per fargli posto.
+ */
+function Alza({ regia, children }: { regia: React.RefObject<Regia>; children: React.ReactNode }) {
+    const g = useRef<THREE.Group>(null);
+    useFrame(() => {
+        const r = regia.current;
+        const coperchio = morbido((r.regalo - 0.35) / 0.65);
+        if (g.current) g.current.position.y = r.comp * 1.1 * (1 - coperchio);
+    });
+    return <group ref={g}>{children}</group>;
+}
+
+/* La candela di sempre si sposta a sinistra per far posto alla seconda */
+function Sposta({ regia, children }: { regia: React.RefObject<Regia>; children: React.ReactNode }) {
+    const g = useRef<THREE.Group>(null);
+    useFrame(() => {
+        if (g.current) g.current.position.x = -PASSO_DUO * montaggio(regia.current.sballa);
+    });
+    return <group ref={g}>{children}</group>;
+}
+
+/* La seconda candela: la stessa, ferma, con l'altra fragranza e il suo tappo */
+function SecondaCandela({ atmosfera, etichetta }: { atmosfera: Atmosfera; etichetta: THREE.Texture | undefined }) {
+    const geoVetro = useMemo(() => creaGeoVetro(), []);
+    const corpo = useMemo(() => creaCorpoTappo(), []);
+    const zigrino = useMemo(() => creaZigrinoTappo(), []);
+    const materiali = useMemo(() => creaMaterialiTappo(), []);
+    useEffect(() => () => Object.values(materiali).forEach((m) => m.dispose()), [materiali]);
+    const hEtichetta = (R_ETICHETTA * ARCO_ETICHETTA) / ETICHETTE[atmosfera].aspetto;
+    return (
+        <>
+            <mesh geometry={geoVetro} renderOrder={2}>
+                <meshPhysicalMaterial
+                    color="#8e4a16"
+                    transparent
+                    opacity={0.8}
+                    roughness={0.05}
+                    clearcoat={1}
+                    clearcoatRoughness={0.04}
+                    envMapIntensity={1.6}
+                    depthWrite={false}
+                />
+            </mesh>
+            <mesh position={[0, FONDO + CERA_MAX / 2, 0]}>
+                <cylinderGeometry args={[R_INTERNO - 0.004, R_INTERNO - 0.03, CERA_MAX, 64]} />
+                <meshStandardMaterial color="#f3ece0" roughness={0.85} />
+            </mesh>
+            <group position={[0, FONDO + CERA_MAX, 0]}>
+                <mesh position={[0, 0.06, 0]}>
+                    <boxGeometry args={[0.2, 0.12, 0.022]} />
+                    <meshStandardMaterial color="#d2a383" roughness={0.85} />
+                </mesh>
+            </group>
+            {etichetta && (
+                <mesh position={[0, H_VETRO * 0.15 + hEtichetta / 2, 0]} renderOrder={3}>
+                    <cylinderGeometry args={[R_ETICHETTA, R_ETICHETTA, hEtichetta, 96, 1, true, -ARCO_ETICHETTA / 2, ARCO_ETICHETTA]} />
+                    <meshStandardMaterial
+                        map={etichetta}
+                        emissiveMap={etichetta}
+                        emissive="#ffffff"
+                        emissiveIntensity={0.28}
+                        roughness={0.5}
+                        alphaTest={0.5}
+                    />
+                </mesh>
+            )}
+            <group position={[0, SEDE_TAPPO, 0]}>
+                <mesh geometry={corpo} material={materiali[atmosfera]} renderOrder={7} />
+                <mesh geometry={zigrino} material={materiali[atmosfera]} renderOrder={7} />
+            </group>
+        </>
+    );
+}
+
+// la scatola rigida nera: vassoio che accoglie le due candele, foderato, con la carta velina che spunta
+const VASSOIO = { largo: 3.5, fondo: 1.85, alto: 0.42, spessore: 0.05 };
+const NASTRO = "#e3cfae";
+
+function useMateriale<T extends THREE.Material>(crea: () => T) {
+    // creato una volta sola, al primo disegno
+    const [m] = useState(crea);
+    useEffect(() => () => m.dispose(), [m]);
+    return m;
+}
+
+function useTextura(file: string) {
+    const [t, setT] = useState<THREE.Texture | null>(null);
+    useEffect(() => {
+        let annullato = false;
+        new THREE.TextureLoader().load(file, (x) => {
+            x.colorSpace = THREE.SRGBColorSpace;
+            x.anisotropy = 8;
+            if (annullato) x.dispose();
+            else setT(x);
+        });
+        return () => {
+            annullato = true;
+        };
+    }, [file]);
+    return t;
+}
+
+// nero lucido quanto basta: al buio la scatola si legge dai riflessi sugli spigoli arrotondati
+const creaNero = () => new THREE.MeshStandardMaterial({ color: "#1c1818", roughness: 0.3, metalness: 0.2, envMapIntensity: 2.2 });
+const creaRaso = () =>
+    new THREE.MeshStandardMaterial({ color: NASTRO, roughness: 0.26, metalness: 0.2, envMapIntensity: 1.8, emissive: NASTRO, emissiveIntensity: 0.16, side: THREE.DoubleSide });
+
+/* l'ombra morbida sotto la composizione: un disco sfumato, disegnato una volta su una tela */
+let texturaOmbra: THREE.Texture | null = null;
+function prendiOmbra() {
+    if (texturaOmbra) return texturaOmbra;
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const ctx = c.getContext("2d")!;
+    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, "rgba(0,0,0,0.85)");
+    g.addColorStop(0.45, "rgba(0,0,0,0.45)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+    texturaOmbra = new THREE.CanvasTexture(c);
+    return texturaOmbra;
+}
+
+/* un foglio di carta velina stropicciato: un piano piegato a caso, sempre uguale (seme fisso) */
+function creaVelina(largo: number, alto: number, seme: number, diTaglio = false) {
+    const geo = new THREE.PlaneGeometry(largo, alto, 22, 10);
+    const pos = geo.attributes.position;
+    let x = seme;
+    const caso = () => {
+        x = (x * 9301 + 49297) % 233280;
+        return x / 233280;
+    };
+    for (let i = 0; i < pos.count; i++) {
+        const u = pos.getX(i) / largo;
+        const v = pos.getY(i) / alto + 0.5;
+        // pieghe più forti in alto, dove la carta è libera; creste lunghe come la velina vera
+        const cresta = Math.sin(u * 23 + seme) * Math.sin(v * 5 + seme * 0.7);
+        pos.setZ(i, (caso() - 0.5) * 0.08 * (0.3 + v) + cresta * 0.035 * (0.4 + v));
+        pos.setY(i, pos.getY(i) + (caso() - 0.5) * 0.045 * v);
+    }
+    // i fogli dei lati nascono già girati di taglio: l'inclinazione verso l'interno resta una rotazione sola
+    if (diTaglio) geo.rotateY(Math.PI / 2);
+    geo.computeVertexNormals();
+    return geo;
+}
+
+function ScatolaRigida() {
+    const nero = useMateriale(creaNero);
+    // la fodera è un velluto color ambra, come il vetro
+    const fodera = useMateriale(
+        () => new THREE.MeshStandardMaterial({ color: "#6b3314", roughness: 0.95, emissive: "#3a1606", emissiveIntensity: 0.45 })
+    );
+    const velina = useMateriale(
+        () =>
+            new THREE.MeshStandardMaterial({
+                color: "#f4efe7",
+                roughness: 1,
+                side: THREE.DoubleSide,
+                emissive: "#f4efe7",
+                emissiveIntensity: 0.16,
+                transparent: true,
+                opacity: 0.94,
+            })
+    );
+    const fogli = useMemo(
+        () => [
+            // quella davanti resta bassa: non deve coprire il nome della fragranza sull'etichetta
+            // tutti dentro le pareti e inclinati verso il centro: la carta spunta sopra il bordo, mai fuori
+            { geo: creaVelina(3.05, 0.45, 3), pos: [0, 0.28, VASSOIO.fondo / 2 - 0.16], rot: [-0.28, 0, 0] },
+            { geo: creaVelina(3.1, 0.9, 7), pos: [0, 0.46, -VASSOIO.fondo / 2 + 0.17], rot: [0.3, 0, 0] },
+            { geo: creaVelina(1.35, 0.72, 11, true), pos: [-VASSOIO.largo / 2 + 0.2, 0.38, 0], rot: [0, 0, -0.26] },
+            { geo: creaVelina(1.35, 0.72, 13, true), pos: [VASSOIO.largo / 2 - 0.2, 0.38, 0], rot: [0, 0, 0.26] },
+            { geo: creaVelina(1.2, 0.85, 17, true), pos: [0, 0.47, 0.05], rot: [0, 0, 0] },
+        ],
+        []
+    );
+    useEffect(() => () => fogli.forEach((f) => f.geo.dispose()), [fogli]);
+    const { largo, fondo, alto, spessore: sp } = VASSOIO;
+    const r = 0.018;
+    return (
+        <group>
+            <RoundedBox args={[largo, sp, fondo]} radius={r} smoothness={3} position={[0, -sp / 2, 0]} material={nero} />
+            <mesh position={[0, 0.002, 0]} rotation-x={-Math.PI / 2} material={fodera}>
+                <planeGeometry args={[largo - 2 * sp, fondo - 2 * sp]} />
+            </mesh>
+            {[fondo / 2 - sp / 2, -fondo / 2 + sp / 2].map((z, i) => (
+                <RoundedBox key={`l${i}`} args={[largo, alto, sp]} radius={r} smoothness={3} position={[0, alto / 2, z]} material={nero} />
+            ))}
+            {[-1, 1].map((lato) => (
+                <RoundedBox
+                    key={`s${lato}`}
+                    args={[sp, alto, fondo - 2 * sp]}
+                    radius={r}
+                    smoothness={3}
+                    position={[lato * (largo / 2 - sp / 2), alto / 2, 0]}
+                    material={nero}
+                />
+            ))}
+            {fogli.map((f, i) => (
+                <mesh
+                    key={`v${i}`}
+                    geometry={f.geo}
+                    material={velina}
+                    position={f.pos as [number, number, number]}
+                    rotation={f.rot as [number, number, number]}
+                />
+            ))}
+        </group>
+    );
+}
+
+/* la coda del nastro, tagliata a V come quella vera */
+function creaCoda() {
+    const f = new THREE.Shape();
+    f.moveTo(-0.07, 0);
+    f.lineTo(0.07, 0);
+    f.lineTo(0.07, 0.56);
+    f.lineTo(0, 0.47);
+    f.lineTo(-0.07, 0.56);
+    f.closePath();
+    const geo = new THREE.ExtrudeGeometry(f, { depth: 0.008, bevelEnabled: false });
+    // stesa sul coperchio, verso chi guarda
+    geo.rotateX(Math.PI / 2);
+    return geo;
+}
+
+/* un anello del fiocco: un nastro piatto piegato a goccia, non una ciambella */
+function creaAnello() {
+    const curva = new THREE.CatmullRomCurve3(
+        [
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0.12, 0.09, 0),
+            new THREE.Vector3(0.3, 0.13, 0),
+            new THREE.Vector3(0.39, 0.05, 0),
+            new THREE.Vector3(0.33, -0.05, 0),
+            new THREE.Vector3(0.14, -0.04, 0),
+        ],
+        true,
+        "centripetal"
+    );
+    const geo = new THREE.TubeGeometry(curva, 64, 0.03, 8, true);
+    // schiacciato nel piano della goccia e allargato di traverso: diventa una fascia di raso
+    geo.scale(1, 1, 2.4);
+    return geo;
+}
+
+/* il coperchio: cavo come quello vero (sotto è aperto, ci entrano le candele), il nastro in raso che corre
+   sopra e scende sui bordi fino allo spigolo, il fiocco pieno e il portone stampato in bianco */
+function CoperchioRigido() {
+    const nero = useMateriale(creaNero);
+    const raso = useMateriale(creaRaso);
+    const fondoInterno = useMateriale(() => new THREE.MeshStandardMaterial({ color: "#2b2522", roughness: 0.9, side: THREE.DoubleSide }));
+    const lamina = useTextura("/images/lamina-portone.webp");
+    const stampa = useMateriale(
+        () =>
+            new THREE.MeshStandardMaterial({
+                color: "#f4f1ec",
+                roughness: 0.55,
+                emissive: "#f4f1ec",
+                emissiveIntensity: 0.4,
+                transparent: true,
+                depthWrite: false,
+            })
+    );
+    useEffect(() => {
+        if (!lamina) return;
+        stampa.alphaMap = lamina;
+        stampa.needsUpdate = true;
+    }, [lamina, stampa]);
+    const coda = useMemo(() => creaCoda(), []);
+    const anello = useMemo(() => creaAnello(), []);
+    useEffect(
+        () => () => {
+            coda.dispose();
+            anello.dispose();
+        },
+        [coda, anello]
+    );
+    const L = VASSOIO.largo + 0.1;
+    const P = VASSOIO.fondo + 0.1;
+    const H = 0.3;
+    const sp = 0.04;
+    const n = 0.16;
+    const e = 0.007;
+    return (
+        <group>
+            {/* il piano e i quattro bordi */}
+            <RoundedBox args={[L, sp, P]} radius={0.015} smoothness={3} position={[0, H / 2 - sp / 2, 0]} material={nero} />
+            {[P / 2 - sp / 2, -P / 2 + sp / 2].map((z, i) => (
+                <RoundedBox key={`b${i}`} args={[L, H, sp]} radius={0.015} smoothness={3} position={[0, 0, z]} material={nero} />
+            ))}
+            {[-1, 1].map((lato) => (
+                <RoundedBox key={`f${lato}`} args={[sp, H, P - 2 * sp]} radius={0.015} smoothness={3} position={[lato * (L / 2 - sp / 2), 0, 0]} material={nero} />
+            ))}
+            <mesh position={[0, H / 2 - sp - 0.001, 0]} rotation-x={Math.PI / 2} material={fondoInterno}>
+                <planeGeometry args={[L - 2 * sp, P - 2 * sp]} />
+            </mesh>
+            {/* il marchio, in un angolo davanti: il nastro passa al centro */}
+            {lamina && (
+                <mesh position={[L / 4 + 0.1, H / 2 + 0.002, P / 4 + 0.03]} rotation-x={-Math.PI / 2} material={stampa}>
+                    <planeGeometry args={[0.72, 0.72 * (724 / 1024)]} />
+                </mesh>
+            )}
+            {/* il nastro: due fasce sopra, che scendono sui quattro bordi e si fermano allo spigolo */}
+            <mesh position={[0, H / 2 + e / 2, 0]} material={raso}>
+                <boxGeometry args={[n, e, P + 2 * e]} />
+            </mesh>
+            <mesh position={[0, H / 2 + e / 2, 0]} material={raso}>
+                <boxGeometry args={[L + 2 * e, e, n]} />
+            </mesh>
+            {[-1, 1].map((lato) => (
+                <mesh key={`nz${lato}`} position={[0, 0, lato * (P / 2 + e / 2)]} material={raso}>
+                    <boxGeometry args={[n, H, e]} />
+                </mesh>
+            ))}
+            {[-1, 1].map((lato) => (
+                <mesh key={`nx${lato}`} position={[lato * (L / 2 + e / 2), 0, 0]} material={raso}>
+                    <boxGeometry args={[e, H, n]} />
+                </mesh>
+            ))}
+            {/* il fiocco: due anelli pieni, il nodo e le code a V che scendono sul coperchio */}
+            <group position={[0, H / 2 + 0.01, 0]}>
+                {[-1, 1].map((lato) => (
+                    // gli anelli partono dal nodo, si aprono di lato e salgono un po', inclinati all'indietro
+                    // (lo specchio si applica prima della rotazione: l'inclinazione va col lato, se no uno sale e l'altro affonda)
+                    <mesh key={lato} geometry={anello} material={raso} position={[0, 0.07, 0]} rotation={[-0.9, 0, lato * 0.3]} scale={[lato * 1.1, 1.1, 1]} />
+                ))}
+                <RoundedBox args={[0.17, 0.12, 0.2]} radius={0.04} smoothness={3} position={[0, 0.06, 0]} material={raso} />
+                {[-1, 1].map((lato) => (
+                    <mesh key={`c${lato}`} geometry={coda} material={raso} position={[lato * 0.04, 0.02, 0.05]} rotation={[0, lato * -0.5, 0]} />
+                ))}
+            </group>
+        </group>
+    );
+}
+
+/* la busta color crema: il taschino a V davanti, la patta aperta dietro col sigillo di ceralacca spezzato;
+   il biglietto scritto a mano ne esce scorrendo */
+function BustaConBiglietto({ regia }: { regia: React.RefObject<Regia> }) {
+    const mappa = useTextura("/images/biglietto.webp");
+    const carta = useMateriale(
+        () => new THREE.MeshStandardMaterial({ color: "#e8dcc8", roughness: 0.92, side: THREE.DoubleSide, emissive: "#e8dcc8", emissiveIntensity: 0.22 })
+    );
+    const cartaOmbra = useMateriale(
+        () => new THREE.MeshStandardMaterial({ color: "#d6c8b0", roughness: 0.92, side: THREE.DoubleSide, emissive: "#d6c8b0", emissiveIntensity: 0.18 })
+    );
+    const cera = useMateriale(() => new THREE.MeshStandardMaterial({ color: "#7a2412", roughness: 0.3, emissive: "#3a0c05", emissiveIntensity: 0.5 }));
+    const forme = useMemo(() => {
+        // la patta aperta, a triangolo
+        const patta = new THREE.Shape();
+        patta.moveTo(-0.72, 0);
+        patta.lineTo(0.72, 0);
+        patta.lineTo(0.05, 0.52);
+        patta.quadraticCurveTo(0, 0.55, -0.05, 0.52);
+        patta.closePath();
+        // il taschino davanti: bordo alto a V, come nelle buste vere
+        const taschino = new THREE.Shape();
+        taschino.moveTo(-0.72, -0.475);
+        taschino.lineTo(0.72, -0.475);
+        taschino.lineTo(0.72, 0.1);
+        taschino.lineTo(0, -0.16);
+        taschino.lineTo(-0.72, 0.1);
+        taschino.closePath();
+        // le due alette laterali, un tono più scuro: danno la piega
+        const aletta = new THREE.Shape();
+        aletta.moveTo(0, -0.475);
+        aletta.lineTo(0, 0.1);
+        aletta.lineTo(0.52, -0.08);
+        aletta.closePath();
+        return {
+            patta: new THREE.ShapeGeometry(patta),
+            taschino: new THREE.ShapeGeometry(taschino),
+            aletta: new THREE.ShapeGeometry(aletta),
+        };
+    }, []);
+    useEffect(() => () => Object.values(forme).forEach((g) => g.dispose()), [forme]);
+    const biglietto = useRef<THREE.Group>(null);
+    useFrame(() => {
+        // il biglietto sale fuori dalla busta nella seconda metà del suo arrivo
+        const esce = morbido((regia.current.biglietto - 0.45) / 0.55);
+        // parte già dentro la busta (il fondo del biglietto sopra il fondo della busta), poi sale e si legge
+        if (biglietto.current) biglietto.current.position.y = -0.04 + esce * 0.52;
+    });
+    return (
+        <group>
+            <mesh position={[0, 0, -0.014]} material={carta}>
+                <boxGeometry args={[1.44, 0.95, 0.006]} />
+            </mesh>
+            <group position={[0, 0.475, -0.02]} rotation-x={-0.38}>
+                <mesh geometry={forme.patta} material={cartaOmbra} />
+            </group>
+            {mappa && (
+                <group ref={biglietto}>
+                    <mesh>
+                        <boxGeometry args={[1.25, 0.83, 0.01]} />
+                        <meshStandardMaterial color="#efe8dc" roughness={0.9} emissive="#efe8dc" emissiveIntensity={0.2} />
+                    </mesh>
+                    <mesh position={[0, 0, 0.006]}>
+                        <planeGeometry args={[1.25, 0.83]} />
+                        <meshStandardMaterial map={mappa} emissiveMap={mappa} emissive="#ffffff" emissiveIntensity={0.32} roughness={0.9} />
+                    </mesh>
+                </group>
+            )}
+            <mesh geometry={forme.taschino} material={carta} position={[0, 0, 0.012]} />
+            <mesh geometry={forme.aletta} material={cartaOmbra} position={[-0.72, 0, 0.014]} />
+            <mesh geometry={forme.aletta} material={cartaOmbra} position={[0.72, 0, 0.014]} scale={[-1, 1, 1]} />
+            {/* il sigillo di ceralacca sulla punta del taschino: il disco e il cerchio in rilievo del timbro */}
+            <group position={[0, -0.17, 0.03]}>
+                <mesh rotation-x={Math.PI / 2} material={cera}>
+                    <cylinderGeometry args={[0.1, 0.11, 0.028, 24]} />
+                </mesh>
+                <mesh position={[0, 0, 0.016]} material={cera}>
+                    <torusGeometry args={[0.062, 0.012, 8, 28]} />
+                </mesh>
+            </group>
+        </group>
+    );
+}
+
+/*
+ * Gli allestimenti attorno alla candela di sempre, guidati dallo scroll: la seconda candela arriva da dietro,
+ * poi si monta il cofanetto regalo (il vassoio sale, il coperchio col fiocco scende e resta sospeso),
+ * poi davanti si appoggia la busta e ne esce il biglietto. Avanti e indietro, sempre sincronizzati.
+ * Sotto, un'ombra morbida; sopra, una luce da foto di prodotto che si accende solo qui.
+ */
+function Allestimenti({ regia, atmosfera }: { regia: React.RefObject<Regia>; atmosfera: Atmosfera }) {
+    const altra: Atmosfera = atmosfera === "butter" ? "berry" : "butter";
+    const etichette = useEtichette();
+    const seconda = useRef<THREE.Group>(null);
+    const vassoio = useRef<THREE.Group>(null);
+    const coperchio = useRef<THREE.Group>(null);
+    const busta = useRef<THREE.Group>(null);
+    const ombra = useRef<THREE.Mesh>(null);
+    const luce = useRef<THREE.DirectionalLight>(null);
+    const materialeOmbra = useMateriale(
+        () => new THREE.MeshBasicMaterial({ map: prendiOmbra(), transparent: true, depthWrite: false, opacity: 0 })
+    );
+
+    useFrame(({ clock }) => {
+        const m = montaggio(regia.current.sballa);
+        const t = clock.elapsedTime;
+        if (seconda.current) {
+            // arriva da dietro e da destra, e si ferma accanto
+            const via = 1 - m;
+            seconda.current.visible = m > 0.01;
+            seconda.current.position.set(PASSO_DUO + via * 1.3, -1.25, -via * 1.4);
+        }
+        // il vassoio sale per primo, il coperchio arriva nella seconda metà
+        const v = morbido(regia.current.regalo / 0.6);
+        const c = morbido((regia.current.regalo - 0.35) / 0.65);
+        if (vassoio.current) {
+            vassoio.current.visible = v > 0.005;
+            vassoio.current.position.y = -1.25 - (1 - v) * 1.9;
+        }
+        if (coperchio.current) {
+            // scende dall'alto e resta sospeso sopra le candele, inclinato verso chi guarda, col fiocco in vista;
+            // respira appena, come la candela
+            coperchio.current.visible = c > 0.005;
+            coperchio.current.position.set(0.1, 2.05 + (1 - c) * 2.4 + Math.sin(t * 1.1) * 0.035, -0.45);
+            coperchio.current.rotation.set(0.68 + (1 - c) * 0.5 + Math.sin(t * 0.8) * 0.015, -0.08 + Math.sin(t * 0.6) * 0.03, 0.1 - (1 - c) * 0.3);
+        }
+        const b = morbido(regia.current.biglietto / 0.55);
+        if (busta.current) {
+            busta.current.visible = b > 0.005;
+            // scende dall'alto girando appena, come posata da una mano, e si appoggia al bordo del vassoio
+            const su = 1 - b;
+            busta.current.position.set(0.15 + su * 0.2, -1.25 + VASSOIO.alto + 0.26 + su * su * 1.6, VASSOIO.fondo / 2 + 0.2 + su * 0.15);
+            busta.current.rotation.set(-0.32 - su * 0.12, 0.06 - su * 0.2, -0.05 + su * 0.3);
+        }
+        if (ombra.current) {
+            // sotto le due candele un'ombra stretta; col vassoio si allarga quanto la scatola
+            ombra.current.visible = m > 0.01;
+            materialeOmbra.opacity = 0.55 * m;
+            ombra.current.scale.set(3.4 + v * 1.2, 1.4 + v * 1.1, 1);
+        }
+        if (luce.current) luce.current.intensity = 1.1 * m;
+    });
+
+    return (
+        <>
+            <directionalLight ref={luce} position={[-2.5, 4, 5]} intensity={0} color="#ffe7cc" />
+            <mesh ref={ombra} rotation-x={-Math.PI / 2} position={[0, -1.25 - VASSOIO.spessore - 0.004, 0]} material={materialeOmbra} renderOrder={-1} visible={false}>
+                <planeGeometry args={[1, 1]} />
+            </mesh>
+            <group ref={seconda} visible={false}>
+                <SecondaCandela atmosfera={altra} etichetta={etichette[altra]} />
+            </group>
+            <group ref={vassoio} visible={false}>
+                <ScatolaRigida />
+            </group>
+            <group ref={coperchio} visible={false}>
+                <CoperchioRigido />
+            </group>
+            <group ref={busta} visible={false}>
+                <BustaConBiglietto regia={regia} />
+            </group>
+        </>
+    );
+}
+
 /* ---------- la scena ---------- */
 
 interface ScenaProps {
@@ -650,6 +1234,7 @@ interface ScenaProps {
     onStappa: () => void;
     onTolto: () => void;
     onSuono: (s: Suono) => void;
+    regia: React.RefObject<Regia>;
     /** tutto caricato (etichetta e, se serve, il pack): la tela può comparire */
     onPronta?: () => void;
     acceso: boolean;
@@ -665,7 +1250,7 @@ interface ScenaProps {
 // sul telefono si risparmia: meno passaggi del vetro, meno pixel
 const leggero = typeof window !== "undefined" && window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
 
-function Scena({ schermo, chiusura, scatola, onApri, onAperta, tappo, onStappa, onTolto, onSuono, onPronta, acceso, atmosfera, rinnovo, onSoffio, onSoffocata, onOre, onFinita }: ScenaProps) {
+function Scena({ schermo, chiusura, regia, scatola, onApri, onAperta, tappo, onStappa, onTolto, onSuono, onPronta, acceso, atmosfera, rinnovo, onSoffio, onSoffocata, onOre, onFinita }: ScenaProps) {
     const { camera, size } = useThree();
     const etichetta = useEtichette()[atmosfera];
     // la candela non si mostra a metà: vasetto, etichetta e pack arrivano insieme
@@ -708,41 +1293,7 @@ function Scena({ schermo, chiusura, scatola, onApri, onAperta, tappo, onStappa, 
     );
     const uniAlone = useMemo(() => ({ uLuce: { value: 0 }, uColore: { value: new THREE.Color("#ffb061") } }), []);
 
-    const geoVetro = useMemo(() => {
-        // profilo da ruotare: fuori dal basso verso l'alto, poi dentro dall'alto verso il basso
-        const p = (r: number, y: number) => new THREE.Vector2(r, y);
-        const profilo = [
-            p(0, 0),
-            p(0.64, 0),
-            p(0.72, 0.02),
-            p(0.75, 0.09),
-            p(0.75, 1.8),
-            p(0.738, 1.84),
-            p(0.716, 1.87),
-            // due giri di filettatura sul collo
-            p(0.716, 1.9),
-            p(0.732, 1.925),
-            p(0.716, 1.95),
-            p(0.716, 1.98),
-            p(0.732, 2.005),
-            p(0.716, 2.03),
-            p(0.716, 2.08),
-            // il labbro spesso e arrotondato
-            p(0.722, 2.11),
-            p(0.712, 2.14),
-            p(0.69, H_VETRO),
-            p(0.665, 2.145),
-            p(0.652, 2.12),
-            p(0.648, 1.88),
-            p(0.668, 1.84),
-            p(R_INTERNO, 1.8),
-            p(R_INTERNO, FONDO + 0.05),
-            p(0.66, FONDO + 0.01),
-            p(0.6, FONDO),
-            p(0, FONDO),
-        ];
-        return new THREE.LatheGeometry(profilo, 128);
-    }, []);
+    const geoVetro = useMemo(() => creaGeoVetro(), []);
 
     const fumo = useMemo(() => {
         const pos = new Float32Array(N_FUMO * 3);
@@ -939,7 +1490,7 @@ function Scena({ schermo, chiusura, scatola, onApri, onAperta, tappo, onStappa, 
                 {scatola !== "via" ? (
                     <Scatola stato={scatola} onApri={onApri} onAperta={onAperta} onSuono={onSuono} schermo={schermo} />
                 ) : (
-                    <Scatola stato="via" onApri={onApri} onAperta={onAperta} onSuono={onSuono} schermo={schermo} chiusura={chiusura} />
+                    <Scatola stato="via" onApri={onApri} onAperta={onAperta} onSuono={onSuono} schermo={schermo} chiusura={chiusura} regia={regia} />
                 )}
 
                 {/* il vetro ambrato */}
@@ -1231,18 +1782,29 @@ function Fotografo({ rif }: { rif: React.RefObject<(() => HTMLCanvasElement) | n
     return null;
 }
 
+/* dalla corsa della sezione dei cofanetti (0-1) ai tre momenti della scena */
+function fasiDaScroll(r: Regia, p: number) {
+    const fase = ([da, a]: readonly [number, number]) => limita((p - da) / (a - da));
+    r.sballa = fase(FASI_COFANETTI.sballa);
+    r.regalo = fase(FASI_COFANETTI.regalo);
+    r.biglietto = fase(FASI_COFANETTI.biglietto);
+}
+
 interface ViaggioProps {
     schermo: React.RefObject<Schermo>;
     aggancio: React.RefObject<Aggancio> | null;
     chiusura: React.RefObject<number>;
+    regia: React.RefObject<Regia>;
     girabile: boolean;
     libera: boolean;
     children: React.ReactNode;
 }
 
-function Viaggio({ schermo, aggancio, chiusura, girabile, libera, children }: ViaggioProps) {
+function Viaggio({ schermo, aggancio, chiusura, regia, girabile, libera, children }: ViaggioProps) {
     const g = useRef<THREE.Group>(null);
-    const giro = useRef({ attuale: 0, trascina: 0, x0: 0, attivo: false });
+    const giro = useRef<{ attuale: number; trascina: number; x0: number; attivo: boolean; scroll?: number }>({ attuale: 0, trascina: 0, x0: 0, attivo: false });
+    // quello che lo scroll chiede, prima della molla
+    const obiettivo = useRef({ giro: 0, chiusura: 0, regia: { comp: 0, sballa: 0, regalo: 0, biglietto: 0 } as Regia });
     const cb = useRef({ girabile, libera });
     useEffect(() => {
         cb.current = { girabile, libera };
@@ -1298,7 +1860,10 @@ function Viaggio({ schermo, aggancio, chiusura, girabile, libera, children }: Vi
             cy = ag.cy;
             h = ag.h;
             giroScroll = ag.tipo === "fragranze" ? p * Math.PI * 2 : 0;
-            chiusura.current = ag.tipo === "cofanetti" ? limita(p / 0.75) : 0;
+            // nella sezione dei cofanetti il pack arriva chiuso com'era uscito dalla scena di prima
+            obiettivo.current.chiusura = ag.tipo === "cofanetti" ? limita(p / 0.75) : ag.tipo === "composizione" ? 1 : 0;
+            regia.current.comp = ag.tipo === "composizione" ? 1 : 0;
+            fasiDaScroll(obiettivo.current.regia, ag.tipo === "composizione" ? p : 0);
             const tela = state.gl.domElement.getBoundingClientRect();
             schermo.current.ox = tela.left;
             schermo.current.oy = tela.top;
@@ -1327,11 +1892,27 @@ function Viaggio({ schermo, aggancio, chiusura, girabile, libera, children }: Vi
         h = b ? mix(a.h, b.h) : a.h;
         const valore = (x: Ancora | null, tipo: string, fn: (p: number) => number) => (x && x.tipo === tipo ? fn(x.p) : 0);
         giroScroll = mix(valore(a, "fragranze", (p) => p * Math.PI * 2), valore(b, "fragranze", (p) => p * Math.PI * 2));
-        chiusura.current = mix(valore(a, "cofanetti", (p) => limita(p / 0.75)), valore(b, "cofanetti", (p) => limita(p / 0.75)));
-        if (!b) {
-            chiusura.current = valore(a, "cofanetti", (p) => limita(p / 0.75));
+        const chiusa = (x: Ancora | null) => valore(x, "cofanetti", (p) => limita(p / 0.75)) + valore(x, "composizione", () => 1);
+        obiettivo.current.chiusura = b ? mix(chiusa(a), chiusa(b)) : chiusa(a);
+        const comp = (x: Ancora | null) => valore(x, "composizione", () => 1);
+        regia.current.comp = b ? mix(comp(a), comp(b)) : comp(a);
+        // la corsa della sezione dei cofanetti, se è lì che sta andando la candela
+        const composizione = [a, b].find((x) => x?.tipo === "composizione");
+        fasiDaScroll(obiettivo.current.regia, composizione && regia.current.comp >= 0.5 ? composizione.p : 0);
         }
-        }
+
+        // la molla: la rotella del mouse scorre a scatti di 100 px, e ogni scatto diventava un salto della scena.
+        // Rotazione, chiusura e montaggio inseguono lo scroll in circa un decimo di secondo: fluidi, ma sempre al passo
+        const molla = 1 - Math.exp(-dt / 0.11);
+        const o = obiettivo.current;
+        o.giro = giroScroll;
+        giro.current.scroll = (giro.current.scroll ?? giroScroll) + (o.giro - (giro.current.scroll ?? giroScroll)) * molla;
+        giroScroll = giro.current.scroll;
+        chiusura.current += (o.chiusura - chiusura.current) * molla;
+        const r = regia.current;
+        r.sballa += (o.regia.sballa - r.sballa) * molla;
+        r.regalo += (o.regia.regalo - r.regalo) * molla;
+        r.biglietto += (o.regia.biglietto - r.biglietto) * molla;
 
         schermo.current.cx = cx + schermo.current.ox;
         schermo.current.cy = cy + schermo.current.oy;
@@ -1357,11 +1938,12 @@ function Viaggio({ schermo, aggancio, chiusura, girabile, libera, children }: Vi
     );
 }
 
-interface Candela3DProps extends Omit<ScenaProps, "schermo" | "chiusura"> {
+interface Candela3DProps extends Omit<ScenaProps, "schermo" | "chiusura" | "regia"> {
     girabile: boolean;
 }
 
 export default function Candela3D({ girabile, ...scena }: Candela3DProps) {
+    const regia = useRef<Regia>({ comp: 0, sballa: 0, regalo: 0, biglietto: 0 });
     const schermo = useRef<Schermo>({ cx: -9999, cy: -9999, h: 0, ox: 0, oy: 0 });
     const aggancio = useRef<Aggancio>({ el: null, tipo: "", cx: 0, cy: 0, h: 0 });
     const fotografa = useRef<(() => HTMLCanvasElement) | null>(null);
@@ -1403,7 +1985,7 @@ export default function Candela3D({ girabile, ...scena }: Candela3DProps) {
         };
     }, [host]);
     const chiusura = useRef(0);
-    // quando nessuna ancora è in vista (laboratorio, ordine, footer) il 3D non disegna niente
+    // quando nessuna ancora è in vista (video, laboratorio, footer) il 3D non disegna niente
     const [inVista, setInVista] = useState(true);
     useEffect(() => {
         const visibili = new Set<Element>();
@@ -1432,9 +2014,21 @@ export default function Candela3D({ girabile, ...scena }: Candela3DProps) {
             style={{ pointerEvents: "none" }}
         >
             {host && <Fotografo rif={fotografa} />}
-            <Viaggio schermo={schermo} aggancio={host ? aggancio : null} chiusura={chiusura} girabile={girabile} libera={scena.scatola === "via"}>
-                <Oscilla>
-                    <Scena {...scena} schermo={schermo} chiusura={chiusura} onPronta={segnaPronta} />
+            <Viaggio
+                schermo={schermo}
+                aggancio={host ? aggancio : null}
+                chiusura={chiusura}
+                regia={regia}
+                girabile={girabile}
+                libera={scena.scatola === "via"}
+            >
+                <Oscilla regia={regia}>
+                    <Alza regia={regia}>
+                        <Sposta regia={regia}>
+                            <Scena {...scena} schermo={schermo} chiusura={chiusura} regia={regia} onPronta={segnaPronta} />
+                        </Sposta>
+                        <Allestimenti regia={regia} atmosfera={scena.atmosfera} />
+                    </Alza>
                 </Oscilla>
             </Viaggio>
         </Canvas>
@@ -1449,16 +2043,18 @@ export default function Candela3D({ girabile, ...scena }: Candela3DProps) {
     );
 }
 
-/* La candela galleggia e oscilla piano, così il vetro mostra i riflessi anche senza toccarlo */
-function Oscilla({ children }: { children: React.ReactNode }) {
+/* La candela galleggia e oscilla piano, così il vetro mostra i riflessi anche senza toccarlo;
+   nei cofanetti quasi si ferma: due candele e una scatola che dondolano sembrano instabili */
+function Oscilla({ regia, children }: { regia: React.RefObject<Regia>; children: React.ReactNode }) {
     const g = useRef<THREE.Group>(null);
     useFrame(({ clock }) => {
         if (!g.current) return;
         const t = clock.elapsedTime;
-        g.current.rotation.y = Math.sin(t * 0.25) * 0.35;
+        const ampiezza = 1 - 0.75 * montaggio(regia.current.sballa);
+        g.current.rotation.y = Math.sin(t * 0.25) * 0.35 * ampiezza;
         // galleggia: su e giù piano, con un'inclinazione appena percettibile
-        g.current.position.y = Math.sin(t * 0.9) * 0.07;
-        g.current.rotation.z = Math.sin(t * 0.7 + 1) * 0.025;
+        g.current.position.y = Math.sin(t * 0.9) * 0.07 * ampiezza;
+        g.current.rotation.z = Math.sin(t * 0.7 + 1) * 0.025 * ampiezza;
     });
     return <group ref={g}>{children}</group>;
 }

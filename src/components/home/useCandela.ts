@@ -44,20 +44,40 @@ export function useCandela() {
         if (suono.current) suono.current.muto = muto;
     }, [muto]);
     useEffect(() => () => suono.current?.ferma(), []);
-    const preparaSuono = useCallback(() => {
-        if (!suono.current) suono.current = new Crepitio();
-        suono.current.prepara();
-    }, []);
-    // il primo tocco sulla pagina sveglia l'audio (i browser lo permettono solo dentro un gesto):
-    // così anche il coperchio tirato col mouse può fare il suo "pop"
+    // l'audio sbloccato: finché non lo è, l'apertura invita a toccare "Attiva il suono"
+    const [audioPronto, setAudioPronto] = useState(false);
+    const mutoOra = useRef(muto);
     useEffect(() => {
-        const sveglia = () => preparaSuono();
-        window.addEventListener("pointerdown", sveglia, { once: true });
-        window.addEventListener("keydown", sveglia, { once: true });
-        return () => {
-            window.removeEventListener("pointerdown", sveglia);
-            window.removeEventListener("keydown", sveglia);
+        mutoOra.current = muto;
+    }, [muto]);
+    const preparaSuono = useCallback(() => {
+        if (!suono.current) {
+            suono.current = new Crepitio();
+            suono.current.muto = mutoOra.current;
+        }
+        const c = suono.current;
+        return c.prepara().then((ok) => {
+            if (ok) setAudioPronto(true);
+            return ok;
+        });
+    }, []);
+    /*
+     * I browser fanno partire l'audio solo dentro un gesto vero: un tocco, un clic, un tasto. Lo scroll non conta.
+     * Su iPhone il primo tocco di solito è l'inizio di uno scroll e non sblocca niente: si riprova a ogni gesto
+     * finché l'audio non suona davvero, così qualunque tocco sulla pagina (un link, il menu) basta.
+     */
+    useEffect(() => {
+        const eventi = ["pointerup", "touchend", "click", "keydown"] as const;
+        const togli = () => eventi.forEach((e) => window.removeEventListener(e, sveglia));
+        const sveglia = (e: Event) => {
+            // il bottone del suono decide da sé: se lo sblocco partisse qui, il bottone lo troverebbe già acceso e lo spegnerebbe
+            if (e.target instanceof Element && e.target.closest("[data-suono]")) return;
+            void preparaSuono().then((ok) => {
+                if (ok) togli();
+            });
         };
+        eventi.forEach((e) => window.addEventListener(e, sveglia, { passive: true }));
+        return togli;
     }, [preparaSuono]);
 
     // lo stato letto dentro i gesti, senza mettere effetti negli aggiornamenti di React
@@ -112,11 +132,12 @@ export function useCandela() {
     }, [apri, stappa]);
 
     // i suoni li decide l'animazione 3D, nel fotogramma giusto
-    const suona = useCallback((s: "stappo" | "scatto" | "tin") => {
+    const suona = useCallback((s: "stappo" | "scatto" | "tin" | "chiuso") => {
         const c = suono.current;
         if (!c) return;
         if (s === "stappo") c.stappo();
         else if (s === "scatto") c.scatto();
+        else if (s === "chiuso") c.chiudi();
         else c.tin();
     }, []);
 
@@ -172,6 +193,8 @@ export function useCandela() {
         suona,
         muto,
         setMuto,
+        audioPronto,
+        preparaSuono,
         soffio,
         soffocata,
         finisce,

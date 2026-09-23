@@ -129,3 +129,17 @@ body::before {
   52% { filter: brightness(1.06); }
   71% { filter: brightness(0.95); }
 }
+
+/* la luce del laboratorio, accesa, trema piano come quella di una fiamma */
+@keyframes respiro-luce {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  31% { transform: scale(0.985); filter: brightness(0.92); }
+  47% { transform: scale(1.01); filter: brightness(1.05); }
+  68% { transform: scale(0.995); filter: brightness(0.96); }
+}
+.respiro-luce {
+  animation: respiro-luce 3.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .respiro-luce { animation: none; }
+}

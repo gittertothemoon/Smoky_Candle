@@ -17,13 +17,13 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://smokycandle.com"),
   title: "Smoky Candle — Candele in cera di soia, colate a mano in Italia",
   description:
-    "Due fragranze, una cosa fatta bene. Cera di soia 100%, niente ftalati, vetro da riusare. Butter e Berry, colate a mano in Italia.",
+    "Butter e Berry, due candele in cera di soia colate a mano in Italia. Oltre quaranta ore di luce calda e un vasetto da tenere.",
   keywords: ["candele cera di soia", "candele artigianali italia", "candele profumate naturali", "candele soia made in italy"],
   authors: [{ name: "Smoky Candle" }],
   openGraph: {
     title: "Smoky Candle — Candele in cera di soia",
     description:
-      "Due fragranze. Cera di soia 100%. Colate a mano in Italia.",
+      "Due candele in cera di soia, colate a mano in Italia.",
     type: "website",
     locale: "it_IT",
     url: "https://smokycandle.com",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Smoky Candle — Candele in cera di soia",
-    description: "Due fragranze. Colate a mano in Italia.",
+    description: "Due candele in cera di soia, colate a mano in Italia.",
     images: ["/images/hero_7.webp"],
   },
   alternates: {

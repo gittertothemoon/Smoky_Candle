@@ -14,18 +14,38 @@ export class Crepitio {
     private timer: ReturnType<typeof setTimeout> | null = null;
     private attivo = false;
 
-    /** Da chiamare dentro un gesto dell'utente: crea o risveglia l'audio. */
-    prepara() {
-        if (typeof window === "undefined") return;
+    /** L'audio è sbloccato e suona davvero (il browser l'ha lasciato partire). */
+    get pronto() {
+        return this.ctx?.state === "running";
+    }
+
+    /**
+     * Da chiamare dentro un gesto dell'utente: crea o risveglia l'audio. Risponde se ora suona.
+     * Fuori da un gesto vero (uno scroll, per esempio) il browser lo lascia sospeso: si riprova al gesto dopo.
+     */
+    async prepara(): Promise<boolean> {
+        if (typeof window === "undefined") return false;
         if (!this.ctx) {
             const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-            if (!AC) return;
+            if (!AC) return false;
             this.ctx = new AC();
             this.uscita = this.ctx.createGain();
             this.uscita.gain.value = 0.9;
             this.uscita.connect(this.ctx.destination);
         }
-        if (this.ctx.state === "suspended") void this.ctx.resume();
+        if (this.ctx.state !== "running") {
+            // Safari apre davvero l'audio solo se dentro il gesto parte un suono: uno muto, di un campione
+            const vuoto = this.ctx.createBufferSource();
+            vuoto.buffer = this.ctx.createBuffer(1, 1, 22050);
+            vuoto.connect(this.ctx.destination);
+            vuoto.start(0);
+            try {
+                await this.ctx.resume();
+            } catch {
+                return false;
+            }
+        }
+        return this.ctx.state === "running";
     }
 
     private rumore(durata: number, decadimento: number) {
@@ -137,6 +157,37 @@ export class Crepitio {
         scatto.start(t);
     }
 
+    /* il pack che si chiude: il coperchio che scivola piano sul collarino, poi si posa con un tonfo morbido */
+    chiudi() {
+        if (!this.ctx) return;
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+        const struscio = ctx.createBufferSource();
+        struscio.buffer = this.rumore(0.32, 1.6);
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.setValueAtTime(850, t);
+        lp.frequency.exponentialRampToValueAtTime(240, t + 0.3);
+        lp.Q.value = 0.6;
+        const gs = ctx.createGain();
+        gs.gain.setValueAtTime(0, t);
+        gs.gain.linearRampToValueAtTime(0.11, t + 0.09);
+        gs.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+        struscio.connect(lp).connect(gs).connect(this.uscita!);
+        struscio.start(t);
+        const tonfo = ctx.createOscillator();
+        tonfo.type = "sine";
+        tonfo.frequency.setValueAtTime(115, t + 0.2);
+        tonfo.frequency.exponentialRampToValueAtTime(55, t + 0.34);
+        const gc = ctx.createGain();
+        gc.gain.setValueAtTime(0, t + 0.2);
+        gc.gain.linearRampToValueAtTime(0.15, t + 0.22);
+        gc.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        tonfo.connect(gc).connect(this.uscita!);
+        tonfo.start(t + 0.2);
+        tonfo.stop(t + 0.55);
+    }
+
     /* il "tin" del tappo che si stacca dal vetro */
     tin() {
         if (!this.ctx) return;
@@ -154,44 +205,35 @@ export class Crepitio {
         tin.stop(t + 0.4);
     }
 
+    /* il pack che si apre: un "fuump" morbido, l'aria che entra nel tubo di cartone, ovattata, e sotto un tonfo leggero */
     stappo() {
         if (!this.ctx) return;
         const ctx = this.ctx;
         const ora = ctx.currentTime;
-        // il colpo: una nota bassa che cade di tono in fretta
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(320, ora);
-        osc.frequency.exponentialRampToValueAtTime(85, ora + 0.09);
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0, ora);
-        g.gain.linearRampToValueAtTime(0.55, ora + 0.006);
-        g.gain.exponentialRampToValueAtTime(0.001, ora + 0.16);
-        osc.connect(g).connect(this.uscita!);
-        osc.start(ora);
-        osc.stop(ora + 0.18);
-        // l'aria che entra nel tubo
         const aria = ctx.createBufferSource();
-        aria.buffer = this.rumore(0.22, 3);
-        const bp = ctx.createBiquadFilter();
-        bp.type = "bandpass";
-        bp.frequency.setValueAtTime(900, ora);
-        bp.frequency.exponentialRampToValueAtTime(350, ora + 0.2);
-        bp.Q.value = 1.2;
+        aria.buffer = this.rumore(0.4, 2.5);
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.setValueAtTime(1100, ora);
+        lp.frequency.exponentialRampToValueAtTime(280, ora + 0.35);
+        lp.Q.value = 0.7;
         const ga = ctx.createGain();
-        ga.gain.value = 0.22;
-        aria.connect(bp).connect(ga).connect(this.uscita!);
-        aria.start(ora + 0.004);
-        // il cartone che struscia un attimo
-        const carta = ctx.createBufferSource();
-        carta.buffer = this.rumore(0.08, 5);
-        const hp = ctx.createBiquadFilter();
-        hp.type = "highpass";
-        hp.frequency.value = 2500;
-        const gc = ctx.createGain();
-        gc.gain.value = 0.08;
-        carta.connect(hp).connect(gc).connect(this.uscita!);
-        carta.start(ora);
+        ga.gain.setValueAtTime(0, ora);
+        ga.gain.linearRampToValueAtTime(0.2, ora + 0.035);
+        ga.gain.exponentialRampToValueAtTime(0.001, ora + 0.38);
+        aria.connect(lp).connect(ga).connect(this.uscita!);
+        aria.start(ora);
+        const tonfo = ctx.createOscillator();
+        tonfo.type = "sine";
+        tonfo.frequency.setValueAtTime(170, ora);
+        tonfo.frequency.exponentialRampToValueAtTime(70, ora + 0.16);
+        const gt = ctx.createGain();
+        gt.gain.setValueAtTime(0, ora);
+        gt.gain.linearRampToValueAtTime(0.16, ora + 0.014);
+        gt.gain.exponentialRampToValueAtTime(0.001, ora + 0.26);
+        tonfo.connect(gt).connect(this.uscita!);
+        tonfo.start(ora);
+        tonfo.stop(ora + 0.3);
     }
 
     /** Il coperchio che si posa sopra e soffoca la fiamma: un tonfo ovattato e uno sfrigolio che muore. */

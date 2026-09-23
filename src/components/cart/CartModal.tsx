@@ -97,7 +97,7 @@ export default function CartModal({ isOpen, onClose, items, onUpdateQuantity, on
                         <div className="flex-1 overflow-y-auto px-6 py-6">
                             {items.length === 0 ? (
                                 <div className="py-16">
-                                    <p className="font-serif text-2xl">Il carrello è vuoto.</p>
+                                    <p className="font-serif text-2xl">Il carrello è ancora vuoto.</p>
                                     <p className="mt-2 max-w-[32ch] text-base text-fumo">
                                         Scegli Butter, Berry o un cofanetto e lo ritrovi qui.
                                     </p>
@@ -180,7 +180,7 @@ export default function CartModal({ isOpen, onClose, items, onUpdateQuantity, on
                                     Invia l&apos;ordine via mail
                                 </a>
                                 <p className="mt-3 text-sm leading-relaxed text-fumo">
-                                    Si apre la tua mail con l&apos;ordine già scritto. Ti rispondiamo entro un giorno lavorativo per il pagamento. Spedizione gratuita in Italia.
+                                    Si apre la tua mail con l&apos;ordine già scritto. Ti scriviamo noi entro un giorno lavorativo per il pagamento. La spedizione in Italia è gratuita.
                                 </p>
                             </div>
                         )}

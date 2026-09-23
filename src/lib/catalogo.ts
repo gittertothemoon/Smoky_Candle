@@ -1,4 +1,5 @@
 export type Atmosfera = "butter" | "berry";
+export type CofanettoScelto = "duo" | "cofanetto-regalo" | "discovery-box";
 
 export interface Articolo {
     id: string;
@@ -14,6 +15,7 @@ export interface Fragranza extends Articolo {
 }
 
 export interface Cofanetto extends Articolo {
+    id: CofanettoScelto;
     descrizione: string;
 }
 
@@ -35,7 +37,7 @@ export const fragranze: Fragranza[] = [
         prezzo: 34,
         immagine: "/images/berry.webp",
         descrizione:
-            "Frutti di bosco appena raccolti, rosa damascena, muschio bianco. Apre la stanza con leggerezza, lascia respirare l'aria.",
+            "Frutti di bosco appena colti, rosa damascena e muschio bianco. Fresca e leggera, per le mattine con le finestre aperte.",
         note: "Frutti di bosco, rosa damascena, muschio bianco",
     },
 ];
@@ -45,25 +47,25 @@ export const cofanetti: Cofanetto[] = [
         id: "duo",
         nome: "Duo",
         prezzo: 58,
-        immagine: "/images/bundle_1.webp",
+        immagine: "/images/cofanetto-duo.webp",
         descrizione:
-            "Butter e Berry, una accanto all'altra. Per chi non vuole scegliere tra le due atmosfere.",
+            "Butter e Berry insieme, per chi non vuole scegliere. O per regalarne una e tenere l'altra.",
     },
     {
         id: "cofanetto-regalo",
         nome: "Cofanetto regalo",
         prezzo: 62,
-        immagine: "/images/bundle_2.webp",
+        immagine: "/images/cofanetto-cofanetto-regalo.webp",
         descrizione:
-            "Le due fragranze in una scatola rigida nera. Arriva pronta da consegnare, senza incarto da aggiungere.",
+            "Le due candele in una scatola rigida nera, già pronta da regalare così com'è.",
     },
     {
         id: "discovery-box",
         nome: "Discovery Box",
         prezzo: 65,
-        immagine: "/images/bundle_3.webp",
+        immagine: "/images/cofanetto-discovery-box.webp",
         descrizione:
-            "Il Duo con un biglietto scritto a mano. Per quando un regalo deve dire qualcosa di tuo.",
+            "Il cofanetto regalo con un biglietto scritto a mano, nella sua busta. Per quando vuoi aggiungere due parole tue.",
     },
 ];
 

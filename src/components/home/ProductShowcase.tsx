@@ -75,7 +75,7 @@ export default function ProductShowcase({ onAtmosfera, onAddToCart }: ProductSho
                 </div>
 
                 <div className="md:col-span-6 lg:col-span-5">
-                    <h2 className="sr-only md:not-sr-only md:text-base md:text-carta/60">Due fragranze, non venti.</h2>
+                    <h2 className="sr-only md:not-sr-only md:text-base md:text-carta/60">Due fragranze, per due modi di stare in casa.</h2>
                     <div role="tablist" aria-label="Fragranze" className="flex gap-2 md:mt-3">
                         {fragranze.map((x, i) => (
                             <button

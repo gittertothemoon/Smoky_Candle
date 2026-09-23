@@ -10,7 +10,6 @@ import ProductShowcase from "@/components/home/ProductShowcase";
 import VideoShowcase from "@/components/home/VideoShowcase";
 import BundleSection from "@/components/home/BundleSection";
 import BrandStory from "@/components/home/BrandStory";
-import ComeOrdinare from "@/components/home/ComeOrdinare";
 import Footer from "@/components/layout/Footer";
 import CartModal, { type CartItem } from "@/components/cart/CartModal";
 import type { Articolo, Atmosfera } from "@/lib/catalogo";
@@ -85,11 +84,10 @@ export default function HomePage() {
                 <HeroSection atmosfera={atmosfera} onAtmosfera={setAtmosfera} candela={candela} />
                 <ProductShowcase atmosfera={atmosfera} onAtmosfera={setAtmosfera} onAddToCart={handleAddToCart} />
                 <BundleSection onAddToCart={handleAddToCart} />
-                <VideoShowcase />
+                <VideoShowcase ore={candela.ore} acceso={candela.acceso} />
                 <BrandStory />
-                <ComeOrdinare />
             </main>
-            <Footer />
+            <Footer acceso={candela.acceso} ore={candela.ore} />
             {tre && <Candela3D
                 scatola={ridotto ? "via" : candela.scatola}
                 onApri={candela.apri}

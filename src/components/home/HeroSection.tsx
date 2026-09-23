@@ -22,7 +22,7 @@ const scelte: { id: Atmosfera; nome: string; colore: string }[] = [
 
 export default function HeroSection({ atmosfera, onAtmosfera, candela }: HeroProps) {
     const ridotto = useMovimentoRidotto();
-    const { acceso, spentaConSoffio, ore, finita, girabile, scatola, apri, tappo, stappa, muto, setMuto, alterna, nuovaCandela } = candela;
+    const { acceso, spentaConSoffio, ore, finita, girabile, scatola, apri, tappo, stappa, muto, setMuto, audioPronto, preparaSuono, alterna, nuovaCandela } = candela;
     // con "Riduci movimento" pack e tappo non ci sono: la candela è già pronta
     const tappata = tappo !== "via" && !ridotto;
 
@@ -62,7 +62,7 @@ export default function HeroSection({ atmosfera, onAtmosfera, candela }: HeroPro
                     </h1>
 
                     <p className="order-5 mt-4 max-w-[42ch] text-base leading-relaxed text-carta/75 md:mt-7 md:text-lg">
-                        Due candele in cera di soia, colate a mano in Italia in piccoli lotti. Stoppino in legno che crepita piano, oltre quaranta ore di luce.
+                        Due candele in cera di soia, colate a mano in Italia, poche alla volta. Lo stoppino in legno crepita piano e ti fa compagnia per oltre quaranta ore.
                     </p>
 
                     <motion.div className="order-2 mt-5 flex flex-wrap items-center gap-x-6 gap-y-4 md:mt-9" {...entra(1.6)}>
@@ -113,17 +113,22 @@ export default function HeroSection({ atmosfera, onAtmosfera, candela }: HeroPro
                         </a>
                     </motion.div>
 
-                    {scatola === "via" && (
-                        <button
-                            type="button"
-                            onClick={() => setMuto((m) => !m)}
-                            aria-pressed={!muto}
-                            className="order-4 mt-3 inline-flex min-h-11 items-center gap-2 self-start rounded-full pr-3 text-sm text-carta/70 transition-colors hover:text-carta md:mt-4"
-                        >
-                            {muto ? <SpeakerSlash size={18} aria-hidden="true" /> : <SpeakerHigh size={18} aria-hidden="true" />}
-                            {muto ? "Suono spento" : "Suono acceso: lo stoppino crepita"}
-                        </button>
-                    )}
+                    {/* sempre in vista: lo scroll da solo non può sbloccare l'audio (regola dei browser), un tocco qui sì */}
+                    <button
+                        type="button"
+                        data-suono
+                        onClick={() => {
+                            if (!audioPronto || muto) {
+                                void preparaSuono();
+                                setMuto(false);
+                            } else setMuto(true);
+                        }}
+                        aria-pressed={audioPronto && !muto}
+                        className="order-4 mt-3 inline-flex min-h-11 items-center gap-2 self-start rounded-full pr-3 text-sm text-carta/70 transition-colors hover:text-carta md:mt-4"
+                    >
+                        {audioPronto && !muto ? <SpeakerHigh size={18} aria-hidden="true" /> : <SpeakerSlash size={18} aria-hidden="true" />}
+                        {!audioPronto ? "Attiva il suono" : muto ? "Suono spento" : "Suono acceso: lo stoppino crepita"}
+                    </button>
 
                     <div className="order-4 mt-1 min-h-[1.5rem] max-w-[44ch] text-sm leading-relaxed text-carta/60 md:mt-3 md:min-h-[3.25rem]" aria-live="polite">
                         {ore > 0 && (
@@ -142,15 +147,15 @@ export default function HeroSection({ atmosfera, onAtmosfera, candela }: HeroPro
                                 </motion.p>
                             ) : finita ? (
                                 <motion.p key="finita" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                    Quaranta ore, tutte. Adesso il vetro è tuo: fiori secchi, pennelli, quello che vuoi.
+                                    Quaranta ore di luce, fino all&apos;ultima. Ora il vasetto può restare con te: per i fiori secchi, i pennelli, quello che ti piace.
                                 </motion.p>
                             ) : acceso ? (
                                 <motion.p key="soffia" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 1.2 } }} exit={{ opacity: 0 }}>
-                                    Passaci sopra veloce e la spegni come con un soffio.{girabile ? " Trascinala per girarla." : ""}
+                                    Passa veloce sopra la fiamma e si spegne, come con un soffio.{girabile ? " Trascinala per girarla." : ""}
                                 </motion.p>
                             ) : spentaConSoffio ? (
                                 <motion.p key="spenta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                    Spenta. Guarda il fumo che sale dallo stoppino.
+                                    Spenta. Guarda il filo di fumo che sale dallo stoppino.
                                 </motion.p>
                             ) : null}
                         </AnimatePresence>
